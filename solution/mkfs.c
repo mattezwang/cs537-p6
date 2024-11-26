@@ -74,18 +74,22 @@ void parse_arguments(int argc, char *argv[]) {
     }
 }
 
-void initialize_filesystem() {
-    int inode_bitmap_size = (num_inodes + 7) / 8; // Bitmap size in bytes (1 bit per inode)
-    int data_bitmap_size = (num_data_blocks + 7) / 8; // Bitmap size in bytes (1 bit per data block)
-    int inode_region_size = num_inodes * BLOCK_SIZE; // Each inode takes 512 bytes
-    int data_region_size = num_data_blocks * BLOCK_SIZE;
 
-    // Calculate required size for the disk
-    int required_size = sizeof(superblock_t)       // Superblock
-                        + ((inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE
-                        + ((data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE
-                        + inode_region_size       // Inode region
-                        + data_region_size;       // Data region
+void initialize_filesystem() {
+    // Calculate sizes
+    int inode_bitmap_size = (num_inodes + 7) / 8; // Bitmap size in bytes (1 bit per inode)
+    int data_bitmap_size = (num_data_blocks + 7) / 8; // Bitmap size in bytes (1 bit per block)
+
+    // Align sizes to block boundaries
+    int inode_bitmap_blocks = (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE; // Bitmap size in blocks
+    int data_bitmap_blocks = (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE; // Bitmap size in blocks
+
+    // Calculate required disk size
+    int required_size = sizeof(superblock_t)                     // Superblock
+                        + inode_bitmap_blocks * BLOCK_SIZE       // Inode bitmap
+                        + data_bitmap_blocks * BLOCK_SIZE        // Data bitmap
+                        + num_inodes * BLOCK_SIZE                // Inode region
+                        + num_data_blocks * BLOCK_SIZE;          // Data block region
 
     for (int i = 0; i < num_disks; i++) {
         int fd = open(disk_images[i], O_RDWR | O_CREAT, 0666);
@@ -107,12 +111,9 @@ void initialize_filesystem() {
             .num_inodes = num_inodes,
             .num_data_blocks = num_data_blocks,
             .inode_bitmap_start = 1, // Block 0 is the superblock
-            .data_bitmap_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
-            .inode_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
-                           (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
-            .data_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
-                          (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
-                          num_inodes // 1 block per inode
+            .data_bitmap_start = 1 + inode_bitmap_blocks,
+            .inode_start = 1 + inode_bitmap_blocks + data_bitmap_blocks,
+            .data_start = 1 + inode_bitmap_blocks + data_bitmap_blocks + num_inodes
         };
 
         // Write the superblock
@@ -137,7 +138,7 @@ void initialize_filesystem() {
             close(fd);
             exit(255);
         }
-        free(inode_bitmap); // Free allocated memory for inode bitmap
+        free(inode_bitmap);
 
         // Write zeroed-out data bitmap
         char *data_bitmap = calloc(1, data_bitmap_size); // Allocate memory for data bitmap
@@ -153,7 +154,7 @@ void initialize_filesystem() {
             close(fd);
             exit(255);
         }
-        free(data_bitmap); // Free allocated memory for data bitmap
+        free(data_bitmap);
 
         // Write zeroed-out inodes
         for (int j = 0; j < num_inodes; j++) {
@@ -170,7 +171,7 @@ void initialize_filesystem() {
                 close(fd);
                 exit(255);
             }
-            free(inode_block); // Free allocated memory for inode block
+            free(inode_block);
         }
 
         // Write zeroed-out data blocks
@@ -188,7 +189,7 @@ void initialize_filesystem() {
                 close(fd);
                 exit(255);
             }
-            free(data_block); // Free allocated memory for data block
+            free(data_block);
         }
 
         close(fd);
@@ -196,6 +197,8 @@ void initialize_filesystem() {
 
     printf("Filesystem initialized successfully.\n");
 }
+
+
 
 
 int main(int argc, char *argv[]) {
