@@ -75,19 +75,17 @@ void parse_arguments(int argc, char *argv[]) {
 }
 
 void initialize_filesystem() {
-    // Calculate sizes
-    int inode_bitmap_size = (num_inodes + 7) / 8; // Bitmap size in bytes (1 bit per inode)
-    int data_bitmap_size = (num_data_blocks + 7) / 8; // Bitmap size in bytes (1 bit per block)
+    int inode_bitmap_size = (num_inodes + 7) / 8;
+    int data_bitmap_size = (num_data_blocks + 7) / 8;
 
-    // Align sizes to block boundaries
-    int inode_bitmap_blocks = (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE; // Inode bitmap in blocks
-    int data_bitmap_blocks = (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE;   // Data bitmap in blocks
+    int inode_bitmap_blocks = (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    int data_bitmap_blocks = (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
     // Calculate required disk size
     int required_size = sizeof(superblock_t)                     // Superblock
                         + inode_bitmap_blocks * BLOCK_SIZE       // Inode bitmap
                         + data_bitmap_blocks * BLOCK_SIZE        // Data bitmap
-                        + num_inodes * BLOCK_SIZE                // Inode region (1 block per inode)
+                        + num_inodes * BLOCK_SIZE                // Inode region
                         + num_data_blocks * BLOCK_SIZE;          // Data block region
 
     for (int i = 0; i < num_disks; i++) {
@@ -97,25 +95,22 @@ void initialize_filesystem() {
             exit(255);
         }
 
-        // Ensure the disk image has enough size
         if (ftruncate(fd, required_size) < 0) {
             perror("Failed to set disk image size");
             close(fd);
             exit(255);
         }
 
-        // Initialize the superblock
+        // Correct layout based on expected order
         superblock_t sb = {
             .raid_mode = raid_mode,
             .num_inodes = num_inodes,
             .num_data_blocks = num_data_blocks,
-            .inode_bitmap_start = 1, // Block 0 is the superblock
-            .data_bitmap_start = 1 + inode_bitmap_blocks,
-            .inode_start = 1 + inode_bitmap_blocks + data_bitmap_blocks,
-            .data_start = 1 + inode_bitmap_blocks + data_bitmap_blocks + num_inodes
+            .inode_bitmap_start = 1, // Block 1
+            .data_bitmap_start = 1 + inode_bitmap_blocks, // After inode bitmap
+            .inode_start = 1 + inode_bitmap_blocks + data_bitmap_blocks, // After data bitmap
+            .data_start = 1 + inode_bitmap_blocks + data_bitmap_blocks + num_inodes // After inodes
         };
-
-        printf("Num of INODES IN SUPERBLOCK: %i\n", num_inodes);
 
         // Write the superblock
         lseek(fd, 0, SEEK_SET);
@@ -125,21 +120,8 @@ void initialize_filesystem() {
             exit(255);
         }
 
-        // Debugging: Print superblock values
-        printf("Superblock:\n");
-        printf("  num_inodes: %d\n", sb.num_inodes);            // Should be 32
-        printf("  inode_bitmap_start: %d\n", sb.inode_bitmap_start);
-        printf("  data_bitmap_start: %d\n", sb.data_bitmap_start);
-        printf("  inode_start: %d\n", sb.inode_start);
-        printf("  data_start: %d\n", sb.data_start);
-
         // Write zeroed-out inode bitmap
-        char *inode_bitmap = calloc(1, inode_bitmap_size); // Allocate memory for inode bitmap
-        if (!inode_bitmap) {
-            perror("Failed to allocate memory for inode bitmap");
-            close(fd);
-            exit(255);
-        }
+        char *inode_bitmap = calloc(1, inode_bitmap_size);
         lseek(fd, sb.inode_bitmap_start * BLOCK_SIZE, SEEK_SET);
         if (write(fd, inode_bitmap, inode_bitmap_size) != inode_bitmap_size) {
             perror("Failed to write inode bitmap");
@@ -150,12 +132,7 @@ void initialize_filesystem() {
         free(inode_bitmap);
 
         // Write zeroed-out data bitmap
-        char *data_bitmap = calloc(1, data_bitmap_size); // Allocate memory for data bitmap
-        if (!data_bitmap) {
-            perror("Failed to allocate memory for data bitmap");
-            close(fd);
-            exit(255);
-        }
+        char *data_bitmap = calloc(1, data_bitmap_size);
         lseek(fd, sb.data_bitmap_start * BLOCK_SIZE, SEEK_SET);
         if (write(fd, data_bitmap, data_bitmap_size) != data_bitmap_size) {
             perror("Failed to write data bitmap");
@@ -167,12 +144,7 @@ void initialize_filesystem() {
 
         // Write zeroed-out inodes
         for (int j = 0; j < num_inodes; j++) {
-            char *inode_block = calloc(1, BLOCK_SIZE); // Allocate memory for each inode block
-            if (!inode_block) {
-                perror("Failed to allocate memory for inode block");
-                close(fd);
-                exit(255);
-            }
+            char *inode_block = calloc(1, BLOCK_SIZE);
             lseek(fd, (sb.inode_start + j) * BLOCK_SIZE, SEEK_SET);
             if (write(fd, inode_block, BLOCK_SIZE) != BLOCK_SIZE) {
                 perror("Failed to write inode block");
@@ -185,12 +157,7 @@ void initialize_filesystem() {
 
         // Write zeroed-out data blocks
         for (int j = 0; j < num_data_blocks; j++) {
-            char *data_block = calloc(1, BLOCK_SIZE); // Allocate memory for each data block
-            if (!data_block) {
-                perror("Failed to allocate memory for data block");
-                close(fd);
-                exit(255);
-            }
+            char *data_block = calloc(1, BLOCK_SIZE);
             lseek(fd, (sb.data_start + j) * BLOCK_SIZE, SEEK_SET);
             if (write(fd, data_block, BLOCK_SIZE) != BLOCK_SIZE) {
                 perror("Failed to write data block");
