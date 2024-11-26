@@ -69,6 +69,7 @@ void validate_and_initialize_disks(int required_size) {
 }
 
 void write_metadata(superblock *sb) {
+    printf("Writing metadata to disks...\n");
     for (int i = 0; i < num_disks; i++) {
         int fd = open(disk_images[i], O_RDWR);
         if (fd < 0) {
@@ -80,11 +81,17 @@ void write_metadata(superblock *sb) {
         lseek(fd, 0, SEEK_SET);
         write(fd, sb, sizeof(superblock));
 
+        // Debug superblock writing
+        printf("Superblock written to disk %s\n", disk_images[i]);
+
         // Write inode bitmap
         char bitmap[512] = {0};
         bitmap[0] = 1; // Mark the root inode as allocated
         lseek(fd, sb->inode_bitmap_start * 512, SEEK_SET);
         write(fd, bitmap, 512);
+
+        // Debug inode bitmap
+        printf("Inode bitmap written at block %d\n", sb->inode_bitmap_start);
 
         // Write data block bitmap
         lseek(fd, sb->data_bitmap_start * 512, SEEK_SET);
@@ -97,6 +104,9 @@ void write_metadata(superblock *sb) {
             write(fd, inode_block, 512);
         }
 
+        // Debug inode writing
+        printf("Inodes written starting at block %d\n", sb->inode_start);
+
         // Write root inode
         inode_t root_inode = {0};
         root_inode.type = 1;  // Directory type
@@ -106,9 +116,12 @@ void write_metadata(superblock *sb) {
         lseek(fd, sb->inode_start * 512, SEEK_SET);
         write(fd, root_block, 512);
 
+        printf("Root inode written at block %d\n", sb->inode_start);
+
         close(fd);
     }
 }
+
 
 
 
