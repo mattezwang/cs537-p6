@@ -18,20 +18,11 @@ void init_sb(struct wfs_sb *sb) {
     sb->num_inodes = num_inodes;
     sb->num_data_blocks = num_data_blocks;
 
-    // assigns the inode bitmap
-    sb->i_bitmap_ptr = sizeof(struct wfs_sb);
-    // aligns it
-    sb->i_bitmap_ptr = (sb->i_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
-
-
-    sb->d_bitmap_ptr = sb->i_bitmap_ptr + ((num_inodes + 7) / 8);
-    sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
-
-    sb->i_blocks_ptr = sb->d_bitmap_ptr + ((num_data_blocks + 7) / 8);
-    sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
-
-    sb->d_blocks_ptr = sb->i_blocks_ptr + (num_inodes * BLOCK_SIZE);
-    sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    // assigns and aligns the blocks
+    sb->i_bitmap_ptr = (sizeof(struct wfs_sb) + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    sb->d_bitmap_ptr = (sb->i_bitmap_ptr + ((num_inodes + 7) / 8) + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    sb->i_blocks_ptr = (sb->d_bitmap_ptr + ((num_data_blocks + 7) / 8) + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    sb->d_blocks_ptr = (sb->i_blocks_ptr + (num_inodes * BLOCK_SIZE) + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 }
 
 void init_disks() {
@@ -71,21 +62,54 @@ void init_disks() {
             exit(EXIT_FAILURE);
         }
 
-        // write empty inside the inode bitmap, clear out space
-        size_t i_bitmap_size = (num_inodes + 7) / 8;
-        if (write(fd, calloc(1, i_bitmap_size), i_bitmap_size) != i_bitmap_size) {
-            perror("Error writing inode bitmap");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
+        // // write empty inside the inode bitmap, clear out space
+        // size_t i_bitmap_size = (num_inodes + 7) / 8;
+        // if (write(fd, calloc(1, i_bitmap_size), i_bitmap_size) != i_bitmap_size) {
+        //     perror("Error writing inode bitmap");
+        //     close(fd);
+        //     exit(EXIT_FAILURE);
+        // }
 
-        // do the same for the data bitmap
-        size_t d_bitmap_size = (num_data_blocks + 7) / 8;
-        if (write(fd, calloc(1, d_bitmap_size), d_bitmap_size) != d_bitmap_size) {
-            perror("Error writing inode bitmap");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
+        size_t i_bitmap_size = (num_inodes + 7) / 8; // Actual size of the inode bitmap
+void *inode_bitmap = calloc(1, i_bitmap_size);
+if (!inode_bitmap) {
+    perror("Error allocating memory for inode bitmap");
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+if (write(fd, inode_bitmap, i_bitmap_size) != i_bitmap_size) {
+    perror("Error writing inode bitmap");
+    free(inode_bitmap);
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+free(inode_bitmap);
+
+        // // do the same for the data bitmap
+        // size_t d_bitmap_size = (num_data_blocks + 7) / 8;
+        // if (write(fd, calloc(1, d_bitmap_size), d_bitmap_size) != d_bitmap_size) {
+        //     perror("Error writing inode bitmap");
+        //     close(fd);
+        //     exit(EXIT_FAILURE);
+        // }
+
+
+// Write the data bitmap (actual size)
+size_t d_bitmap_size = (num_data_blocks + 7) / 8; // Actual size of the data bitmap
+void *data_bitmap = calloc(1, d_bitmap_size);
+if (!data_bitmap) {
+    perror("Error allocating memory for data bitmap");
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+if (write(fd, data_bitmap, d_bitmap_size) != d_bitmap_size) {
+    perror("Error writing data bitmap");
+    free(data_bitmap);
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+free(data_bitmap);
+
 
         struct wfs_inode root_inode = {0};
         root_inode.num = 0;
