@@ -104,10 +104,9 @@ void initialize_filesystem() {
             exit(255);
         }
 
-        // Write the superblock
- superblock_t sb = {
+superblock_t sb = {
     .raid_mode = raid_mode,
-    .num_inodes = num_inodes,
+    .num_inodes = num_inodes, // Set to 32
     .num_data_blocks = num_data_blocks,
     .inode_bitmap_start = 1, // Block 0 is the superblock
     .data_bitmap_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
@@ -121,6 +120,7 @@ void initialize_filesystem() {
 lseek(fd, 0, SEEK_SET);
 if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
     perror("Failed to write superblock");
+    close(fd);
     exit(255);
 }
 
