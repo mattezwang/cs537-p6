@@ -74,21 +74,20 @@ void parse_arguments(int argc, char *argv[]) {
     }
 }
 
-
 void initialize_filesystem() {
     // Calculate sizes
     int inode_bitmap_size = (num_inodes + 7) / 8; // Bitmap size in bytes (1 bit per inode)
     int data_bitmap_size = (num_data_blocks + 7) / 8; // Bitmap size in bytes (1 bit per block)
 
     // Align sizes to block boundaries
-    int inode_bitmap_blocks = (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE; // Bitmap size in blocks
-    int data_bitmap_blocks = (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE; // Bitmap size in blocks
+    int inode_bitmap_blocks = (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE; // Inode bitmap in blocks
+    int data_bitmap_blocks = (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE;   // Data bitmap in blocks
 
     // Calculate required disk size
     int required_size = sizeof(superblock_t)                     // Superblock
                         + inode_bitmap_blocks * BLOCK_SIZE       // Inode bitmap
                         + data_bitmap_blocks * BLOCK_SIZE        // Data bitmap
-                        + num_inodes * BLOCK_SIZE                // Inode region
+                        + num_inodes * BLOCK_SIZE                // Inode region (1 block per inode)
                         + num_data_blocks * BLOCK_SIZE;          // Data block region
 
     for (int i = 0; i < num_disks; i++) {
@@ -123,6 +122,14 @@ void initialize_filesystem() {
             close(fd);
             exit(255);
         }
+
+        // Debugging: Print superblock values
+        printf("Superblock:\n");
+        printf("  num_inodes: %d\n", sb.num_inodes);            // Should be 32
+        printf("  inode_bitmap_start: %d\n", sb.inode_bitmap_start);
+        printf("  data_bitmap_start: %d\n", sb.data_bitmap_start);
+        printf("  inode_start: %d\n", sb.inode_start);
+        printf("  data_start: %d\n", sb.data_start);
 
         // Write zeroed-out inode bitmap
         char *inode_bitmap = calloc(1, inode_bitmap_size); // Allocate memory for inode bitmap
