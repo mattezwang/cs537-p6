@@ -14,83 +14,81 @@ int num_disks;
 int num_data_blocks;
 
 
-#include <time.h>
-
-
-void initialize_superblock(struct wfs_sb *sb) {
+void init(struct wfs_sb *sb) {
     sb->num_inodes = num_inodes;
     sb->num_data_blocks = num_data_blocks;
 
-    // Calculate the locations of the inode bitmap, data bitmap, inode blocks, and data blocks
-    sb->i_bitmap_ptr = sizeof(struct wfs_sb); // Immediately after the superblock
-    sb->i_bitmap_ptr = (sb->i_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1); // Align to block size
+    // assigns the inode bitmap
+    sb->i_bitmap_ptr = sizeof(struct wfs_sb);
+    // aligns it
+    sb->i_bitmap_ptr = (sb->i_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+
 
     sb->d_bitmap_ptr = sb->i_bitmap_ptr + ((num_inodes + 7) / 8);
-    sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1); // Align to block size
+    sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
     sb->i_blocks_ptr = sb->d_bitmap_ptr + ((num_data_blocks + 7) / 8);
-    sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1); // Align to block size
+    sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
     sb->d_blocks_ptr = sb->i_blocks_ptr + (num_inodes * BLOCK_SIZE);
-    sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1); // Align to block size
+    sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 }
 
 void initialize_disks() {
     struct wfs_sb sb;
-
-    // Initialize the superblock structure
     initialize_superblock(&sb);
 
-    size_t required_size = sb.d_blocks_ptr + (num_data_blocks * BLOCK_SIZE);
+    size_t i_bitmap_size = (num_inodes + 7) / 8;
 
-    // Initialize each disk image
+    // superblock size + inodes bitmap size + data bitmap size + inodes size + data blocks size
+    size_t required_size = sizeof(struct wfs_sb)
+                     + ((num_inodes + 7) / 8)
+                     + ((num_data_blocks + 7) / 8)
+                     + (num_inodes * BLOCK_SIZE)
+                     + (num_data_blocks * BLOCK_SIZE);
+
+    // aligning the required size
+    required_size = (required_size + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+
+    // iterating through the disks
     for (int i = 0; i < num_disks; i++) {
+
+        // opening the disks
         int fd = open(disk_images[i], O_RDWR | O_CREAT | O_TRUNC, 0644);
         if (fd < 0) {
             perror("Error opening disk image");
             exit(EXIT_FAILURE);
         }
 
-        // Ensure the disk is large enough
         if (ftruncate(fd, required_size) < 0) {
             perror("Error setting disk size");
             close(fd);
             exit(EXIT_FAILURE);
         }
 
-        // Write superblock
+        // checks if entire superblock is written to the disk. if not, return failure
         if (write(fd, &sb, sizeof(struct wfs_sb)) != sizeof(struct wfs_sb)) {
             perror("Error writing superblock");
             close(fd);
             exit(EXIT_FAILURE);
         }
 
-        // Write empty inode bitmap
+        // write empty inside the inode bitmap, clear out space
         size_t i_bitmap_size = (num_inodes + 7) / 8;
-        char *bitmap = calloc(1, i_bitmap_size);
-        if (!bitmap) {
-            perror("Error allocating memory for inode bitmap");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
-        if (write(fd, bitmap, i_bitmap_size) != i_bitmap_size) {
+        if (write(fd, calloc(1, i_bitmap_size), i_bitmap_size) != i_bitmap_size) {
             perror("Error writing inode bitmap");
-            free(bitmap);
             close(fd);
             exit(EXIT_FAILURE);
         }
 
-        // Write empty data bitmap
+        // do the same for the data bitmap
         size_t d_bitmap_size = (num_data_blocks + 7) / 8;
-        if (write(fd, bitmap, d_bitmap_size) != d_bitmap_size) {
-            perror("Error writing data bitmap");
-            free(bitmap);
+        if (write(fd, calloc(1, d_bitmap_size), d_bitmap_size) != d_bitmap_size) {
+            perror("Error writing inode bitmap");
             close(fd);
             exit(EXIT_FAILURE);
         }
-        free(bitmap);
 
-        // Write root inode
         struct wfs_inode root_inode = {0};
         root_inode.num = 0;
         root_inode.mode = S_IFDIR | 0755; // Directory permissions
@@ -107,7 +105,6 @@ void initialize_disks() {
         close(fd);
     }
 }
-
 
 
 void parse_arguments(int argc, char *argv[]) {
@@ -159,9 +156,6 @@ void parse_arguments(int argc, char *argv[]) {
         }
     }
 }
-
-
-
 
 
 int main(int argc, char *argv[]) {
