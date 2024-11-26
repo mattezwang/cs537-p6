@@ -142,8 +142,9 @@ void initialize_filesystem() {
         // Write zeroed-out inodes
         lseek(fd, sb.inode_start, SEEK_SET);
         printf("num_inodes = %i\n", num_inodes);
-        
+
         for (int j = 0; j < num_inodes; j++) {
+            printf("how many times does this run \n)");
             if (write(fd, zero_block, 512) != 512) {
                 perror("Failed to write inode");
                 close(fd);
