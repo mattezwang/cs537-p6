@@ -31,6 +31,27 @@ void init_sb(struct wfs_sb *sb) {
 
     sb->d_blocks_ptr = sb->i_blocks_ptr + (num_inodes * BLOCK_SIZE);
     sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+
+
+    size_t required_size = sizeof(struct wfs_sb)
+                     + ((num_inodes + 7) / 8)
+                     + ((num_data_blocks + 7) / 8)
+                     + (num_inodes * BLOCK_SIZE)
+                     + (num_data_blocks * BLOCK_SIZE);
+
+    // Calculate sizes using offsets
+    size_t inode_bitmap_size = sb->d_bitmap_ptr - sb->i_bitmap_ptr;
+    size_t data_bitmap_size = sb->i_blocks_ptr - sb->d_bitmap_ptr;
+    size_t inode_region_size = sb->d_blocks_ptr - sb->i_blocks_ptr;
+    size_t data_block_region_size = required_size - sb->d_blocks_ptr; 
+
+    // Print debug information
+    printf("Filesystem Layout:\n");
+    printf("  Superblock size: %zu bytes\n", sizeof(struct wfs_sb));
+    printf("  Inode bitmap offset: %ld bytes, size: %ld bytes\n", sb->i_bitmap_ptr, inode_bitmap_size);
+    printf("  Data bitmap offset: %ld bytes, size: %ld bytes\n", sb->d_bitmap_ptr, data_bitmap_size);
+    printf("  Inode region offset: %ld bytes, size: %ld bytes\n", sb->i_blocks_ptr, inode_region_size);
+    printf("  Data block region offset: %ld bytes, size: %ld bytes\n", sb->d_blocks_ptr, data_block_region_size);
 }
 
 void init_disks() {
