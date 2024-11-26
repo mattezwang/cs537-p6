@@ -12,6 +12,17 @@ int capacity = 10;
 int num_disks;
 int num_data_blocks;
 
+typedef struct {
+    int raid_mode;
+    int num_inodes;
+    int num_data_blocks;
+    int inode_bitmap_start;
+    int data_bitmap_start;
+    int inode_start;
+    int data_start;
+} superblock;
+
+
 void
 parse_arguments(int argc, char *argv[]) {
 
@@ -66,18 +77,9 @@ parse_arguments(int argc, char *argv[]) {
     }
 }
 
-typedef struct {
-    int raid_mode;          // RAID mode (0 or 1)
-    int num_inodes;         // Number of inodes
-    int num_data_blocks;    // Number of data blocks
-    int inode_bitmap_start; // Offset of inode bitmap
-    int data_bitmap_start;  // Offset of data block bitmap
-    int inode_start;        // Offset of inodes
-    int data_start;         // Offset of data blocks
-} superblock_t;
 
 
-void write_metadata(superblock_t *sb) {
+void write_metadata(superblock *sb) {
     for (int i = 0; i < num_disks; i++) {
         int fd = open(disk_images[i], O_RDWR);
         if (fd < 0) {
@@ -87,7 +89,7 @@ void write_metadata(superblock_t *sb) {
 
         // Write superblock
         lseek(fd, 0, SEEK_SET);
-        write(fd, sb, sizeof(superblock_t));
+        write(fd, sb, sizeof(superblock));
 
         // Write empty inode bitmap
         lseek(fd, sb->inode_bitmap_start * 512, SEEK_SET);
@@ -104,13 +106,14 @@ void write_metadata(superblock_t *sb) {
 
         // Write root inode
         lseek(fd, sb->inode_start * 512, SEEK_SET);
-        char inode[512] = {0};
+        char inode[512] = {17};
         inode[0] = 1; // Mark as allocated
         write(fd, inode, 512);
 
         close(fd);
     }
 }
+
 
 void validate_and_initialize_disks() {
     for (int i = 0; i < num_disks; i++) {
@@ -145,7 +148,9 @@ void validate_and_initialize_disks() {
     }
 }
 
-void calculate_layout(superblock_t *sb) {
+
+
+void calculate_layout(superblock *sb) {
     sb->inode_bitmap_start = 1; // Superblock takes the first block
     sb->data_bitmap_start = sb->inode_bitmap_start + (num_inodes + 7) / 8 / 512;
     sb->inode_start = sb->data_bitmap_start + (num_data_blocks + 7) / 8 / 512;
@@ -158,8 +163,8 @@ void calculate_layout(superblock_t *sb) {
 int main(int argc, char *argv[]) {
     disk_images = malloc(capacity * sizeof(char*));
     parse_arguments(argc, argv);
-    
-    superblock_t sb;
+
+    superblock sb;
     sb.raid_mode = raid_mode;
     sb.num_inodes = num_inodes;
     sb.num_data_blocks = num_data_blocks;
