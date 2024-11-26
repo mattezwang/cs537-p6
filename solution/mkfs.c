@@ -74,10 +74,12 @@ void parse_arguments(int argc, char *argv[]) {
     }
 }
 
-void initialize_filesystem() {
-    int inode_bitmap_size = (num_inodes + 7) / 8;
-    int data_bitmap_size = (num_data_blocks + 7) / 8;
 
+void initialize_filesystem() {
+    int inode_bitmap_size = (num_inodes + 7) / 8; // Size of inode bitmap in bytes
+    int data_bitmap_size = (num_data_blocks + 7) / 8; // Size of data bitmap in bytes
+
+    // Round bitmap sizes to block boundaries
     int inode_bitmap_blocks = (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
     int data_bitmap_blocks = (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
@@ -85,8 +87,8 @@ void initialize_filesystem() {
     int required_size = sizeof(superblock_t)                     // Superblock
                         + inode_bitmap_blocks * BLOCK_SIZE       // Inode bitmap
                         + data_bitmap_blocks * BLOCK_SIZE        // Data bitmap
-                        + num_inodes * BLOCK_SIZE                // Inode region
-                        + num_data_blocks * BLOCK_SIZE;          // Data block region
+                        + num_inodes * BLOCK_SIZE                // Inodes region
+                        + num_data_blocks * BLOCK_SIZE;          // Data blocks region
 
     for (int i = 0; i < num_disks; i++) {
         int fd = open(disk_images[i], O_RDWR | O_CREAT, 0666);
@@ -95,24 +97,25 @@ void initialize_filesystem() {
             exit(255);
         }
 
+        // Ensure the disk image is large enough
         if (ftruncate(fd, required_size) < 0) {
             perror("Failed to set disk image size");
             close(fd);
             exit(255);
         }
 
-        // Correct layout based on expected order
+        // Calculate layout of the filesystem
         superblock_t sb = {
             .raid_mode = raid_mode,
             .num_inodes = num_inodes,
             .num_data_blocks = num_data_blocks,
-            .inode_bitmap_start = 1, // Block 1
-            .data_bitmap_start = 1 + inode_bitmap_blocks, // After inode bitmap
+            .inode_bitmap_start = 1,                                  // Block 1
+            .data_bitmap_start = 1 + inode_bitmap_blocks,             // After inode bitmap
             .inode_start = 1 + inode_bitmap_blocks + data_bitmap_blocks, // After data bitmap
             .data_start = 1 + inode_bitmap_blocks + data_bitmap_blocks + num_inodes // After inodes
         };
 
-        // Write the superblock
+        // Write the superblock to block 0
         lseek(fd, 0, SEEK_SET);
         if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
             perror("Failed to write superblock");
@@ -120,7 +123,7 @@ void initialize_filesystem() {
             exit(255);
         }
 
-        // Write zeroed-out inode bitmap
+        // Write zeroed-out inode bitmap to block 1
         char *inode_bitmap = calloc(1, inode_bitmap_size);
         lseek(fd, sb.inode_bitmap_start * BLOCK_SIZE, SEEK_SET);
         if (write(fd, inode_bitmap, inode_bitmap_size) != inode_bitmap_size) {
