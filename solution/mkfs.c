@@ -6,8 +6,6 @@
 #include <stdint.h>
 #include "wfs.h"
 
-#define BLOCK_SIZE 512 
-
 int raid_mode;
 int num_inodes;
 char **disk_images;
