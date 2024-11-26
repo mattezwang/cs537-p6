@@ -125,8 +125,8 @@ void validate_and_initialize_disks() {
     for (int i = 0; i < num_disks; i++) {
         int fd = open(disk_images[i], O_RDWR | O_CREAT, 0644);
         if (fd < 0) {
-            perror("Failed to open disk image");
-            exit(-1);
+            perror("Failed to open or create disk image");
+            exit(-1); // Ensure the program exits with proper error handling
         }
 
         // Calculate required size
@@ -139,20 +139,26 @@ void validate_and_initialize_disks() {
         // Check if disk is large enough
         off_t size = lseek(fd, 0, SEEK_END);
         if (size < required_size) {
-            fprintf(stderr, "Disk image %s is too small\n", disk_images[i]);
-            exit(-1);
+            fprintf(stderr, "Disk image %s is too small. Required size: %d bytes\n", disk_images[i], required_size);
+            close(fd);
+            exit(-1); // Exit with error if disk is too small
         }
 
         // Zero out the file
         lseek(fd, 0, SEEK_SET);
         char zero[512] = {0};
         for (int j = 0; j < required_size / 512; j++) {
-            write(fd, zero, 512);
+            if (write(fd, zero, 512) < 0) {
+                perror("Failed to write zeros to disk image");
+                close(fd);
+                exit(-1);
+            }
         }
 
         close(fd);
     }
 }
+
 
 
 
