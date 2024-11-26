@@ -27,10 +27,10 @@ void init_sb(struct wfs_sb *sb) {
     // sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
     sb->i_blocks_ptr = sb->d_bitmap_ptr + ((num_data_blocks + 7) / 8);
-    // sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
     sb->d_blocks_ptr = sb->i_blocks_ptr + (num_inodes * BLOCK_SIZE);
-    // sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
 
     size_t required_size = sizeof(struct wfs_sb)
@@ -137,32 +137,6 @@ free(inode_bitmap);
         //     close(fd);
         //     exit(EXIT_FAILURE);
         // }
-
-        // Allocate and clear the data bitmap
-size_t d_bitmap_size = (num_data_blocks + 7) / 8;
-uint8_t *data_bitmap = calloc(1, d_bitmap_size);
-if (!data_bitmap) {
-    perror("Error allocating memory for data bitmap");
-    close(fd);
-    exit(EXIT_FAILURE);
-}
-
-// Seek to the data bitmap location
-if (lseek(fd, sb.d_bitmap_ptr, SEEK_SET) == (off_t)-1) {
-    perror("Error seeking to data bitmap location");
-    free(data_bitmap);
-    close(fd);
-    exit(EXIT_FAILURE);
-}
-
-// Write the cleared data bitmap
-if (write(fd, data_bitmap, d_bitmap_size) != d_bitmap_size) {
-    perror("Error writing data bitmap");
-    free(data_bitmap);
-    close(fd);
-    exit(EXIT_FAILURE);
-}
-free(data_bitmap);
 
         struct wfs_inode root_inode = {0};
         root_inode.num = 0;
