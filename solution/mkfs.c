@@ -68,21 +68,66 @@ void init_disks() {
             exit(EXIT_FAILURE);
         }
 
-        // write empty inside the inode bitmap, clear out space
+        // // write empty inside the inode bitmap, clear out space
         size_t i_bitmap_size = (num_inodes + 7) / 8;
-        if (write(fd, calloc(1, i_bitmap_size), i_bitmap_size) != i_bitmap_size) {
-            perror("Error writing inode bitmap");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
+        // if (write(fd, calloc(1, i_bitmap_size), i_bitmap_size) != i_bitmap_size) {
+        //     perror("Error writing inode bitmap");
+        //     close(fd);
+        //     exit(EXIT_FAILURE);
+        // }
+
+
+        // Move the file offset to the inode bitmap location
+if (lseek(fd, sb.i_bitmap_ptr, SEEK_SET) == (off_t)-1) {
+    perror("Error seeking to inode bitmap location");
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+
+// Write the empty inode bitmap to the specified location
+void *inode_bitmap = calloc(1, i_bitmap_size);
+if (!inode_bitmap) {
+    perror("Error allocating memory for inode bitmap");
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+if (write(fd, inode_bitmap, i_bitmap_size) != i_bitmap_size) {
+    perror("Error writing inode bitmap");
+    free(inode_bitmap);
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+free(inode_bitmap);
 
         // do the same for the data bitmap
         size_t d_bitmap_size = (num_data_blocks + 7) / 8;
-        if (write(fd, calloc(1, d_bitmap_size), d_bitmap_size) != d_bitmap_size) {
-            perror("Error writing inode bitmap");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
+        // if (write(fd, calloc(1, d_bitmap_size), d_bitmap_size) != d_bitmap_size) {
+        //     perror("Error writing inode bitmap");
+        //     close(fd);
+        //     exit(EXIT_FAILURE);
+        // }
+
+        // Move the file offset to the data bitmap location
+if (lseek(fd, sb.d_bitmap_ptr, SEEK_SET) == (off_t)-1) {
+    perror("Error seeking to data bitmap location");
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+
+// Write the empty data bitmap to the specified location
+void *data_bitmap = calloc(1, d_bitmap_size);
+if (!data_bitmap) {
+    perror("Error allocating memory for data bitmap");
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+if (write(fd, data_bitmap, d_bitmap_size) != d_bitmap_size) {
+    perror("Error writing data bitmap");
+    free(data_bitmap);
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+free(data_bitmap);
 
         struct wfs_inode root_inode = {0};
         root_inode.num = 0;
