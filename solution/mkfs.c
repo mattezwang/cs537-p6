@@ -79,14 +79,25 @@ parse_arguments(int argc, char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
+    printf("Program started\n");
+
     disk_images = malloc(capacity * sizeof(char*));
+
+    printf("Parsing arguments\n");
     parse_arguments(argc, argv);
+    printf("Parsing arguments success\n");
+
+    printf("RAID Mode: %d, Inodes: %d, Data Blocks: %d\n", raid_mode, num_inodes, num_data_blocks);
+
+
+    printf("setting stuff in superblock\n");
 
     superblock sb;
     sb.raid_mode = raid_mode;
     sb.num_inodes = num_inodes;
     sb.num_data_blocks = num_data_blocks;
 
+    printf("successful setting\n");
 
     for (int i = 0; i < num_disks; i++) {
         free(disk_images[i]);
