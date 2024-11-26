@@ -16,15 +16,30 @@ int num_data_blocks;
 
 #include <time.h>
 
+
+void initialize_superblock(struct wfs_sb *sb) {
+    sb->num_inodes = num_inodes;
+    sb->num_data_blocks = num_data_blocks;
+
+    // Calculate the locations of the inode bitmap, data bitmap, inode blocks, and data blocks
+    sb->i_bitmap_ptr = sizeof(struct wfs_sb); // Immediately after the superblock
+    sb->i_bitmap_ptr = (sb->i_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1); // Align to block size
+
+    sb->d_bitmap_ptr = sb->i_bitmap_ptr + ((num_inodes + 7) / 8);
+    sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1); // Align to block size
+
+    sb->i_blocks_ptr = sb->d_bitmap_ptr + ((num_data_blocks + 7) / 8);
+    sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1); // Align to block size
+
+    sb->d_blocks_ptr = sb->i_blocks_ptr + (num_inodes * BLOCK_SIZE);
+    sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1); // Align to block size
+}
+
 void initialize_disks() {
     struct wfs_sb sb;
-    // Superblock Initialization
-    sb.num_inodes = num_inodes;
-    sb.num_data_blocks = num_data_blocks;
-    sb.i_bitmap_ptr = sizeof(struct wfs_sb);
-    sb.d_bitmap_ptr = sb.i_bitmap_ptr + ((num_inodes + 7) / 8); // Rounded inode bitmap
-    sb.i_blocks_ptr = sb.d_bitmap_ptr + ((num_data_blocks + 7) / 8); // Rounded data bitmap
-    sb.d_blocks_ptr = sb.i_blocks_ptr + (num_inodes * BLOCK_SIZE); // Aligned inode space
+
+    // Initialize the superblock structure
+    initialize_superblock(&sb);
 
     size_t required_size = sb.d_blocks_ptr + (num_data_blocks * BLOCK_SIZE);
 
