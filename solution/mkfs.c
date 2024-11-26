@@ -77,18 +77,17 @@ void parse_arguments(int argc, char *argv[]) {
 void initialize_filesystem() {
     int inode_bitmap_size = (num_inodes + 7) / 8; // Bitmap size in bytes (1 bit per inode)
     int data_bitmap_size = (num_data_blocks + 7) / 8; // Bitmap size in bytes (1 bit per data block)
-    int inode_region_size = num_inodes * 512; // Each inode takes 512 bytes
-    printf("inode_region_size = %i\n", inode_region_size);
-
-    int data_region_size = num_data_blocks * 512;
+    int inode_region_size = num_inodes * BLOCK_SIZE; // Each inode takes 512 bytes
+    int data_region_size = num_data_blocks * BLOCK_SIZE;
 
     // Calculate required size for the disk
     int required_size = sizeof(superblock_t)       // Superblock
-                        + inode_bitmap_size       // Inode bitmap
-                        + data_bitmap_size        // Data bitmap
+                        + ((inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE
+                        + ((data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE
                         + inode_region_size       // Inode region
                         + data_region_size;       // Data region
 
+    char *zero_block = calloc(1, BLOCK_SIZE); // Reusable 512-byte zeroed buffer
 
     for (int i = 0; i < num_disks; i++) {
         int fd = open(disk_images[i], O_RDWR | O_CREAT, 0666);
@@ -104,26 +103,21 @@ void initialize_filesystem() {
             exit(255);
         }
 
-superblock_t sb = {
-    .raid_mode = raid_mode,
-    .num_inodes = num_inodes, // Set to 32
-    .num_data_blocks = num_data_blocks,
-    .inode_bitmap_start = 1, // Block 0 is the superblock
-    .data_bitmap_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
-    .inode_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
-                   (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
-    .data_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
-                  (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
-                  num_inodes // 1 block per inode
-};
+        // Initialize the superblock
+        superblock_t sb = {
+            .raid_mode = raid_mode,
+            .num_inodes = num_inodes, // Set to 32
+            .num_data_blocks = num_data_blocks,
+            .inode_bitmap_start = 1, // Block 0 is the superblock
+            .data_bitmap_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
+            .inode_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
+                           (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
+            .data_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
+                          (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
+                          num_inodes // 1 block per inode
+        };
 
-lseek(fd, 0, SEEK_SET);
-if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
-    perror("Failed to write superblock");
-    close(fd);
-    exit(255);
-}
-
+        // Write the superblock
         lseek(fd, 0, SEEK_SET);
         if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
             perror("Failed to write superblock");
@@ -132,39 +126,45 @@ if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
         }
 
         // Write zeroed-out inode bitmap
-        lseek(fd, sb.inode_bitmap_start, SEEK_SET);
-        if (write(fd, calloc(1, 512), inode_bitmap_size) != inode_bitmap_size) {
+        char *inode_bitmap = calloc(1, inode_bitmap_size);
+        lseek(fd, sb.inode_bitmap_start * BLOCK_SIZE, SEEK_SET);
+        if (write(fd, inode_bitmap, inode_bitmap_size) != inode_bitmap_size) {
             perror("Failed to write inode bitmap");
+            free(inode_bitmap);
             close(fd);
             exit(255);
         }
+        free(inode_bitmap);
 
         // Write zeroed-out data bitmap
-        lseek(fd, sb.data_bitmap_start, SEEK_SET);
-        if (write(fd, calloc(1, 512), data_bitmap_size) != data_bitmap_size) {
+        char *data_bitmap = calloc(1, data_bitmap_size);
+        lseek(fd, sb.data_bitmap_start * BLOCK_SIZE, SEEK_SET);
+        if (write(fd, data_bitmap, data_bitmap_size) != data_bitmap_size) {
             perror("Failed to write data bitmap");
+            free(data_bitmap);
             close(fd);
             exit(255);
         }
+        free(data_bitmap);
 
         // Write zeroed-out inodes
-        lseek(fd, sb.inode_start, SEEK_SET);
-        printf("num_inodes = %i\n", num_inodes);
-
+        lseek(fd, sb.inode_start * BLOCK_SIZE, SEEK_SET);
         for (int j = 0; j < num_inodes; j++) {
-            if (write(fd, calloc(1, 512), 512) != 512) {
+            if (write(fd, zero_block, BLOCK_SIZE) != BLOCK_SIZE) {
                 perror("Failed to write inode");
                 close(fd);
+                free(zero_block);
                 exit(255);
             }
         }
 
         // Write zeroed-out data blocks
-        lseek(fd, sb.data_start, SEEK_SET);
+        lseek(fd, sb.data_start * BLOCK_SIZE, SEEK_SET);
         for (int j = 0; j < num_data_blocks; j++) {
-            if (write(fd, calloc(1, 512), 512) != 512) {
+            if (write(fd, zero_block, BLOCK_SIZE) != BLOCK_SIZE) {
                 perror("Failed to write data block");
                 close(fd);
+                free(zero_block);
                 exit(255);
             }
         }
@@ -172,6 +172,7 @@ if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
         close(fd);
     }
 
+    free(zero_block);
     printf("Filesystem initialized successfully.\n");
 }
 
