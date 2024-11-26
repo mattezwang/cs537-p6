@@ -115,6 +115,8 @@ void initialize_filesystem() {
             .data_start = 1 + inode_bitmap_blocks + data_bitmap_blocks + num_inodes
         };
 
+        printf("Num of INODES IN SUPERBLOCK: %i\n", num_inodes);
+
         // Write the superblock
         lseek(fd, 0, SEEK_SET);
         if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
