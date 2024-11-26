@@ -86,13 +86,12 @@ if (lseek(fd, sb.i_bitmap_ptr, SEEK_SET) == (off_t)-1) {
 
 // Write the empty inode bitmap to the specified location
 void *inode_bitmap = calloc(1, i_bitmap_size);
-if (!inode_bitmap) {
-    perror("Error allocating memory for inode bitmap");
-    close(fd);
-    exit(EXIT_FAILURE);
-}
+// Set the first bit (mark inode 0 as allocated)
+((uint8_t *)inode_bitmap)[0] |= 1;
+
+// Write the updated inode bitmap back to disk
 if (write(fd, inode_bitmap, i_bitmap_size) != i_bitmap_size) {
-    perror("Error writing inode bitmap");
+    perror("Error writing updated inode bitmap");
     free(inode_bitmap);
     close(fd);
     exit(EXIT_FAILURE);
