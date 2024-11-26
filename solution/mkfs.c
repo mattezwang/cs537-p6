@@ -106,27 +106,33 @@ free(inode_bitmap);
         //     exit(EXIT_FAILURE);
         // }
 
-        // Move the file offset to the data bitmap location
+// Allocate the first data block in the data bitmap (for the root inode)
 if (lseek(fd, sb.d_bitmap_ptr, SEEK_SET) == (off_t)-1) {
     perror("Error seeking to data bitmap location");
     close(fd);
     exit(EXIT_FAILURE);
 }
 
-// Write the empty data bitmap to the specified location
+// Read the existing data bitmap (optional, if partial updates are needed)
 void *data_bitmap = calloc(1, d_bitmap_size);
 if (!data_bitmap) {
     perror("Error allocating memory for data bitmap");
     close(fd);
     exit(EXIT_FAILURE);
 }
+
+// Set the first bit (mark data block 0 as allocated)
+((uint8_t *)data_bitmap)[0] |= 1;
+
+// Write the updated data bitmap back to disk
 if (write(fd, data_bitmap, d_bitmap_size) != d_bitmap_size) {
-    perror("Error writing data bitmap");
+    perror("Error writing updated data bitmap");
     free(data_bitmap);
     close(fd);
     exit(EXIT_FAILURE);
 }
 free(data_bitmap);
+
 
         struct wfs_inode root_inode = {0};
         root_inode.num = 0;
