@@ -112,6 +112,7 @@ void initialize_filesystem() {
             .inode_start = sizeof(superblock_t) + inode_bitmap_size + data_bitmap_size,
             .data_start = sizeof(superblock_t) + inode_bitmap_size + data_bitmap_size + inode_region_size
         };
+
         lseek(fd, 0, SEEK_SET);
         if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
             perror("Failed to write superblock");
@@ -140,6 +141,8 @@ void initialize_filesystem() {
 
         // Write zeroed-out inodes
         lseek(fd, sb.inode_start, SEEK_SET);
+        printf("num_inodes = %i\n", num_inodes);
+        
         for (int j = 0; j < num_inodes; j++) {
             if (write(fd, zero_block, 512) != 512) {
                 perror("Failed to write inode");
