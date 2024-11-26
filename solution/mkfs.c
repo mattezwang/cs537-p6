@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <stdint.h>
 
+#define BLOCK_SIZE 512 
+
 int raid_mode;
 int num_inodes;
 char **disk_images;
@@ -104,14 +106,23 @@ void initialize_filesystem() {
 
         // Write the superblock
         superblock_t sb = {
-            .raid_mode = raid_mode,
-            .num_inodes = num_inodes,
-            .num_data_blocks = num_data_blocks,
-            .inode_bitmap_start = sizeof(superblock_t),
-            .data_bitmap_start = sizeof(superblock_t) + inode_bitmap_size,
-            .inode_start = sizeof(superblock_t) + inode_bitmap_size + data_bitmap_size,
-            .data_start = sizeof(superblock_t) + inode_bitmap_size + data_bitmap_size + inode_region_size
-        };
+    .raid_mode = raid_mode,
+    .num_inodes = num_inodes,
+    .num_data_blocks = num_data_blocks,
+    .inode_bitmap_start = 1, // Block 0 is the superblock
+    .data_bitmap_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
+    .inode_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
+                   (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
+    .data_start = 1 + (inode_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
+                  (data_bitmap_size + BLOCK_SIZE - 1) / BLOCK_SIZE +
+                  (inode_region_size + BLOCK_SIZE - 1) / BLOCK_SIZE
+};
+
+lseek(fd, 0, SEEK_SET);
+if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
+    perror("Failed to write superblock");
+    exit(255);
+}
 
         lseek(fd, 0, SEEK_SET);
         if (write(fd, &sb, sizeof(superblock_t)) != sizeof(superblock_t)) {
@@ -144,7 +155,6 @@ void initialize_filesystem() {
         printf("num_inodes = %i\n", num_inodes);
 
         for (int j = 0; j < num_inodes; j++) {
-            printf("how many times does this run \n)");
             if (write(fd, zero_block, 512) != 512) {
                 perror("Failed to write inode");
                 close(fd);
