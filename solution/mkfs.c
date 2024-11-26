@@ -24,7 +24,7 @@ void init_sb(struct wfs_sb *sb) {
     // sb->i_bitmap_ptr = (sb->i_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
     sb->d_bitmap_ptr = sb->i_bitmap_ptr + ((num_inodes + 7) / 8);
-    sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    // sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
     sb->i_blocks_ptr = sb->d_bitmap_ptr + ((num_data_blocks + 7) / 8);
     sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
