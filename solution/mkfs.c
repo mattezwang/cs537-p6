@@ -91,15 +91,44 @@ void init_disks() {
             exit(EXIT_FAILURE);
         }
 
-        // write empty inside the inode bitmap, clear out space
-        size_t i_bitmap_size = (num_inodes + 7) / 8;
-        uint8_t *inode_bitmap = calloc(1, i_bitmap_size);
-        if (write(fd, inode_bitmap, i_bitmap_size) != i_bitmap_size) {
-            perror("Error writing inode bitmap");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
-        inode_bitmap[0] |= 1;
+        // // write empty inside the inode bitmap, clear out space
+        // size_t i_bitmap_size = (num_inodes + 7) / 8;
+        // uint8_t *inode_bitmap = calloc(1, i_bitmap_size);
+        // if (write(fd, inode_bitmap, i_bitmap_size) != i_bitmap_size) {
+        //     perror("Error writing inode bitmap");
+        //     close(fd);
+        //     exit(EXIT_FAILURE);
+        // }
+        // inode_bitmap[0] |= 1;
+
+        // Write empty inode bitmap
+size_t i_bitmap_size = (num_inodes + 7) / 8;
+uint8_t *inode_bitmap = calloc(1, i_bitmap_size);
+if (!inode_bitmap) {
+    perror("Error allocating memory for inode bitmap");
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+
+// Mark inode 0 as allocated
+inode_bitmap[0] |= 1;
+
+// Seek to the inode bitmap location
+if (lseek(fd, sb.i_bitmap_ptr, SEEK_SET) == (off_t)-1) {
+    perror("Error seeking to inode bitmap location");
+    free(inode_bitmap);
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+
+// Write the updated inode bitmap
+if (write(fd, inode_bitmap, i_bitmap_size) != i_bitmap_size) {
+    perror("Error writing updated inode bitmap");
+    free(inode_bitmap);
+    close(fd);
+    exit(EXIT_FAILURE);
+}
+free(inode_bitmap);
 
         // do the same for the data bitmap
         size_t d_bitmap_size = (num_data_blocks + 7) / 8;
