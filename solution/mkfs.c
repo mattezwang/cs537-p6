@@ -20,9 +20,12 @@ void init_sb(struct wfs_sb *sb) {
 
     // assigns the inode bitmap
     sb->i_bitmap_ptr = sizeof(struct wfs_sb);
+    // aligns it
+    sb->i_bitmap_ptr = (sb->i_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+
 
     sb->d_bitmap_ptr = sb->i_bitmap_ptr + ((num_inodes + 7) / 8);
-    // sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    sb->d_bitmap_ptr = (sb->d_bitmap_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
     sb->i_blocks_ptr = sb->d_bitmap_ptr + ((num_data_blocks + 7) / 8);
     sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
@@ -157,7 +160,7 @@ int main(int argc, char *argv[]) {
     disk_images = malloc(capacity * sizeof(char *));
     parse_arguments(argc, argv);
 
-    init_disks();
+    initialize_disks();
 
     // Free allocated memory
     for (int i = 0; i < num_disks; i++) {
