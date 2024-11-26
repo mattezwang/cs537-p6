@@ -158,15 +158,7 @@ void calculate_layout(superblock_t *sb) {
 int main(int argc, char *argv[]) {
     disk_images = malloc(capacity * sizeof(char*));
     parse_arguments(argc, argv);
-
-    // printf("RAID Mode: %d\n", raid_mode);
-    // printf("Number of Inodes: %d\n", num_inodes);
-    // printf("Number of Data Blocks (rounded): %d\n", num_data_blocks);
-    // printf("Number of Disk Images: %d\n", num_disks);
-    // for (int i = 0; i < num_disks; i++) {
-    //     printf("Disk Image %d: %s\n", i + 1, disk_images[i]);
-    // }
-
+    
     superblock_t sb;
     sb.raid_mode = raid_mode;
     sb.num_inodes = num_inodes;
