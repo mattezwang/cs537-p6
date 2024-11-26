@@ -14,7 +14,7 @@ int num_disks;
 int num_data_blocks;
 
 
-void init(struct wfs_sb *sb) {
+void init_sb(struct wfs_sb *sb) {
     sb->num_inodes = num_inodes;
     sb->num_data_blocks = num_data_blocks;
 
@@ -34,11 +34,9 @@ void init(struct wfs_sb *sb) {
     sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 }
 
-void initialize_disks() {
+void init_disks() {
     struct wfs_sb sb;
-    initialize_superblock(&sb);
-
-    size_t i_bitmap_size = (num_inodes + 7) / 8;
+    init_sb(&sb);
 
     // superblock size + inodes bitmap size + data bitmap size + inodes size + data blocks size
     size_t required_size = sizeof(struct wfs_sb)
@@ -162,7 +160,7 @@ int main(int argc, char *argv[]) {
     disk_images = malloc(capacity * sizeof(char *));
     parse_arguments(argc, argv);
 
-    initialize_disks();
+    init_disks();
 
     // Free allocated memory
     for (int i = 0; i < num_disks; i++) {
