@@ -72,7 +72,6 @@ void parse_arguments(int argc, char *argv[]) {
     }
 }
 
-// New function: Initialize the filesystem on the specified disk
 void initialize_filesystem() {
     int inode_bitmap_size = (num_inodes + 7) / 8; // Bitmap size in bytes (1 bit per inode)
     int data_bitmap_size = (num_data_blocks + 7) / 8; // Bitmap size in bytes (1 bit per data block)
@@ -123,24 +122,20 @@ void initialize_filesystem() {
 
         // Write zeroed-out inode bitmap
         lseek(fd, sb.inode_bitmap_start, SEEK_SET);
-        for (int j = 0; j < inode_bitmap_size; j++) {
-            if (write(fd, zero_block, 1) != 1) {
-                perror("Failed to write inode bitmap");
-                close(fd);
-                free(zero_block);
-                exit(255);
-            }
+        if (write(fd, zero_block, inode_bitmap_size) != inode_bitmap_size) {
+            perror("Failed to write inode bitmap");
+            close(fd);
+            free(zero_block);
+            exit(255);
         }
 
         // Write zeroed-out data bitmap
         lseek(fd, sb.data_bitmap_start, SEEK_SET);
-        for (int j = 0; j < data_bitmap_size; j++) {
-            if (write(fd, zero_block, 1) != 1) {
-                perror("Failed to write data bitmap");
-                close(fd);
-                free(zero_block);
-                exit(255);
-            }
+        if (write(fd, zero_block, data_bitmap_size) != data_bitmap_size) {
+            perror("Failed to write data bitmap");
+            close(fd);
+            free(zero_block);
+            exit(255);
         }
 
         // Write zeroed-out inodes
@@ -171,6 +166,7 @@ void initialize_filesystem() {
 
     printf("Filesystem initialized successfully.\n");
 }
+
 
 int main(int argc, char *argv[]) {
     disk_images = malloc(capacity * sizeof(char *));
