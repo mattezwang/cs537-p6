@@ -92,10 +92,10 @@ int main(int argc, char *argv[]) {
 
     printf("setting stuff in superblock\n");
 
-    superblock sb;
-    sb.raid_mode = raid_mode;
-    sb.num_inodes = num_inodes;
-    sb.num_data_blocks = num_data_blocks;
+    // superblock sb;
+    // sb.raid_mode = raid_mode;
+    // sb.num_inodes = num_inodes;
+    // sb.num_data_blocks = num_data_blocks;
 
     printf("successful setting\n");
 
