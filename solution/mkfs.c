@@ -30,9 +30,8 @@ parse_arguments(int argc, char *argv[]) {
             case 'd':
                 if (num_disks >= capacity) {
                     capacity *= 2;
-                    disk_images = realloc(disk_images, (capacity) * sizeof(char*));
                 }
-                if(disk_images == -1) {
+                if(disk_images = realloc(disk_images, (capacity) * sizeof(char*)) == -1) {
                     fprintf(stderr, "disk_images array allocation failed\n");
                     exit(-1);
                 }
@@ -68,8 +67,8 @@ parse_arguments(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-    disk_images = alloc(capacity * sizeof(char*));
-    parse_arguments;
+    disk_images = malloc(capacity * sizeof(char*));
+    parse_arguments(argc, argv);
 
     printf("RAID Mode: %d\n", raid_mode);
     printf("Number of Inodes: %d\n", num_inodes);
