@@ -23,7 +23,7 @@ parse_arguments(int argc, char *argv[]) {
                 raid_mode = atoi(optarg);
                 if (raid_mode > 1 || raid_mode < 0) {
                     fprintf(stderr, "raid mode out of bounds (has to be 0 or 1)\n");
-                    exit(-1);
+                    exit(255);
                 }
                 break;
 
@@ -34,7 +34,7 @@ parse_arguments(int argc, char *argv[]) {
                 }
                 if(disk_images == NULL) {
                     fprintf(stderr, "disk_images array allocation failed\n");
-                    exit(-1);
+                    exit(255);
                 }
 
                 disk_images[num_disks++] = strdup(optarg);
@@ -44,7 +44,7 @@ parse_arguments(int argc, char *argv[]) {
                 num_inodes = atoi(optarg);
                 if (num_inodes <= 0) {
                     fprintf(stderr, "num of inodes has to be >= 0\n");
-                    exit(-1);
+                    exit(255);
                 }
                 break;
 
@@ -52,7 +52,7 @@ parse_arguments(int argc, char *argv[]) {
                 num_data_blocks = atoi(optarg);
                 if (num_data_blocks <= 0) {
                     fprintf(stderr, "num of data blocks has to be >= 0\n");
-                    exit(-1);
+                    exit(255);
                 }
 
                 // this makes it a multiple of 32
@@ -61,7 +61,7 @@ parse_arguments(int argc, char *argv[]) {
 
             default:
                 fprintf(stderr, "usage: %s -r <raid_mode> -d <disk> -i <inodes> -b <blocks>\n", argv[0]);
-                exit(-1);
+                exit(255);
         }
     }
 }
