@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
     disk_images = malloc(capacity * sizeof(char *));
     parse_arguments(argc, argv);
 
-    initialize_disks();
+    init_disks();
 
     // Free allocated memory
     for (int i = 0; i < num_disks; i++) {
