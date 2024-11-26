@@ -30,7 +30,7 @@ void init_sb(struct wfs_sb *sb) {
     // sb->i_blocks_ptr = (sb->i_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
     sb->d_blocks_ptr = sb->i_blocks_ptr + (num_inodes * BLOCK_SIZE);
-    sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
+    // sb->d_blocks_ptr = (sb->d_blocks_ptr + BLOCK_SIZE - 1) & ~(BLOCK_SIZE - 1);
 
 
     size_t required_size = sizeof(struct wfs_sb)
