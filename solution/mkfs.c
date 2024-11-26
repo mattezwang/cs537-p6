@@ -93,11 +93,13 @@ void init_disks() {
 
         // write empty inside the inode bitmap, clear out space
         size_t i_bitmap_size = (num_inodes + 7) / 8;
-        if (write(fd, calloc(1, i_bitmap_size), i_bitmap_size) != i_bitmap_size) {
+        uint8_t *inode_bitmap = calloc(1, i_bitmap_size);
+        if (write(fd, inode_bitmap, i_bitmap_size) != i_bitmap_size) {
             perror("Error writing inode bitmap");
             close(fd);
             exit(EXIT_FAILURE);
         }
+        inode_bitmap[0] |= 1;
 
         // do the same for the data bitmap
         size_t d_bitmap_size = (num_data_blocks + 7) / 8;
