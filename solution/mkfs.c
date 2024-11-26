@@ -78,7 +78,6 @@ parse_arguments(int argc, char *argv[]) {
 }
 
 
-
 void write_metadata(superblock *sb) {
     for (int i = 0; i < num_disks; i++) {
         int fd = open(disk_images[i], O_RDWR);
@@ -94,9 +93,8 @@ void write_metadata(superblock *sb) {
         // Write empty inode bitmap
         lseek(fd, sb->inode_bitmap_start * 512, SEEK_SET);
         char bitmap[512] = {0};
-        for (int j = 0; j < (num_inodes + 7) / 8 / 512; j++) {
-            write(fd, bitmap, 512);
-        }
+        bitmap[0] = 1; // Mark the root inode in the bitmap
+        write(fd, bitmap, 512);
 
         // Write empty data bitmap
         lseek(fd, sb->data_bitmap_start * 512, SEEK_SET);
@@ -104,15 +102,23 @@ void write_metadata(superblock *sb) {
             write(fd, bitmap, 512);
         }
 
-        // Write root inode
+        // Write all inodes
+        char inode[512] = {0};
+        for (int j = 0; j < sb->num_inodes; j++) {
+            lseek(fd, (sb->inode_start + j) * 512, SEEK_SET);
+            write(fd, inode, 512);
+        }
+
+        // Mark and write the root inode
+        char root_inode[512] = {0};
+        root_inode[0] = 1; // Mark the root inode as allocated
         lseek(fd, sb->inode_start * 512, SEEK_SET);
-        char inode[512] = {17};
-        inode[0] = 1; // Mark as allocated
-        write(fd, inode, 512);
+        write(fd, root_inode, 512);
 
         close(fd);
     }
 }
+
 
 
 void validate_and_initialize_disks() {
