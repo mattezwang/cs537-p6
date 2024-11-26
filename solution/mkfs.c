@@ -30,8 +30,9 @@ parse_arguments(int argc, char *argv[]) {
             case 'd':
                 if (num_disks >= capacity) {
                     capacity *= 2;
+                    disk_images = realloc(disk_images, (capacity) * sizeof(char*));
                 }
-                if(disk_images = realloc(disk_images, (capacity) * sizeof(char*)) == -1) {
+                if(disk_images == NULL) {
                     fprintf(stderr, "disk_images array allocation failed\n");
                     exit(-1);
                 }
