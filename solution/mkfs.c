@@ -28,13 +28,13 @@ void init_sb(struct wfs_sb *sb) {
     off_t d_bitmap_off = i_bitmap_off + inode_bitmap_bytes;
     off_t inode_start = d_bitmap_off + data_bitmap_bytes;
 
-    //Align inode blocks
+    // align inode blocks
     inode_start = ((inode_start + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE;
 
     //find data blocks start
     off_t db_start = inode_start + (num_inodes * BLOCK_SIZE);
 
-    //Fill superblock
+    // fill supernode with info
     sb->num_inodes = num_inodes;
     sb->num_data_blocks = num_data_blocks;
     sb->i_bitmap_ptr = i_bitmap_off;
@@ -44,6 +44,7 @@ void init_sb(struct wfs_sb *sb) {
     sb->raid_mode = raid_mode;
     sb->num_disks = num_disks;
 }
+
 
 void init_disks() {
     struct wfs_sb sb;
@@ -58,20 +59,20 @@ void init_disks() {
     for (int i = 0; i < num_disks; i++) {
         file_descs[i] = open(disk_images[i], O_RDWR);
         if (file_descs[i] < 0) {
-            perror("Error opening disk image");
+            // perror("Error opening disk image");
             exit(-1);
         }
 
         struct stat st;
         if (fstat(file_descs[i], &st) < 0 || st.st_size < fs_size) {
-            perror("Error with disk image size or stat");
+            // perror("Error with disk image size or stat");
             exit(-1);
         }
 
         //Map disk image
         disk_maps[i] = mmap(NULL, fs_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_descs[i], 0);
         if (disk_maps[i] == MAP_FAILED) {
-            perror("Error mapping disk image");
+            // perror("Error mapping disk image");
             exit(-1);
         }
 
@@ -112,6 +113,7 @@ void init_disks() {
 }
 
 
+// get the arguments from the command line using opt
 void parse_arguments(int argc, char *argv[]) {
     int tag;
     while ((tag = getopt(argc, argv, "r:d:i:b:")) != -1) {
@@ -119,7 +121,7 @@ void parse_arguments(int argc, char *argv[]) {
             case 'r':
                 raid_mode = atoi(optarg);
                 if (raid_mode > 1 || raid_mode < 0) {
-                    fprintf(stderr, "raid mode out of bounds (has to be 0 or 1)\n");
+                    // fprintf(stderr, "raid mode out of bounds (has to be 0 or 1)\n");
                     exit(1);
                 }
                 break;
@@ -130,7 +132,7 @@ void parse_arguments(int argc, char *argv[]) {
                     disk_images = realloc(disk_images, (capacity) * sizeof(char *));
                 }
                 if (disk_images == NULL) {
-                    fprintf(stderr, "disk_images array allocation failed\n");
+                    // fprintf(stderr, "disk_images array allocation failed\n");
                     exit(1);
                 }
                 disk_images[num_disks++] = strdup(optarg);
@@ -139,7 +141,7 @@ void parse_arguments(int argc, char *argv[]) {
             case 'i':
                 num_inodes = atoi(optarg);
                 if (num_inodes <= 0) {
-                    fprintf(stderr, "num of inodes has to be >= 0\n");
+                    // fprintf(stderr, "num of inodes has to be >= 0\n");
                     exit(1);
                 }
                 break;
@@ -147,19 +149,19 @@ void parse_arguments(int argc, char *argv[]) {
             case 'b':
                 num_data_blocks = atoi(optarg);
                 if (num_data_blocks <= 0) {
-                    fprintf(stderr, "num of data blocks has to be >= 0\n");
+                    // fprintf(stderr, "num of data blocks has to be >= 0\n");
                     exit(1);
                 }
                 break;
 
             default:
-                fprintf(stderr, "usage: %s -r <raid_mode> -d <disk> -i <inodes> -b <blocks>\n", argv[0]);
+                // fprintf(stderr, "usage: %s -r <raid_mode> -d <disk> -i <inodes> -b <blocks>\n", argv[0]);
                 exit(1);
         }
     }
 
     if (num_disks < 2) {
-        fprintf(stderr, "at least 2 disks are needed.\n");
+        // fprintf(stderr, "at least 2 disks are needed.\n");
         exit(1);
     }
 
@@ -171,21 +173,22 @@ void parse_arguments(int argc, char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
-    raid_mode = -1;
-    num_inodes = -1;
-    disk_images = NULL;
+    // raid_mode = -1;
+    // num_inodes = -1;
+    // disk_images = NULL;
     capacity = 256;
-    num_disks = 0;
-    num_data_blocks = -1;
+    // num_disks = 0;
+    // num_data_blocks = -1;
     disk_images = malloc(capacity * sizeof(char *));
     parse_arguments(argc, argv);
 
     init_disks();
 
-    //Free allocated memory
+    // free memory
     for (int i = 0; i < num_disks; i++) {
         free(disk_images[i]);
     }
+
     free(disk_images);
 
     return 0;
