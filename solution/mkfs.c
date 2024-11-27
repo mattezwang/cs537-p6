@@ -173,15 +173,10 @@ void parse_arguments(int argc, char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
-    // raid_mode = -1;
-    // num_inodes = -1;
-    // disk_images = NULL;
     capacity = 256;
-    // num_disks = 0;
-    // num_data_blocks = -1;
     disk_images = malloc(capacity * sizeof(char *));
+    
     parse_arguments(argc, argv);
-
     init_disks();
 
     // free memory
