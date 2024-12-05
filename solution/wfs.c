@@ -8,6 +8,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <libgen.h>
 #include "wfs.h"
 
 void *mapped_region;
@@ -32,6 +34,10 @@ size_t alloc_block(uint32_t *bitmap, size_t size) {
     return -1;
 }
 
+void free_bitmap(uint32_t pos, uint32_t *bitmap) {
+    bitmap[pos / 32] -= 1 << (pos % 32);
+}
+
 off_t alloc_database() {
     struct wfs_sb *tmp = (struct wfs_sb *)mapped_region;
     off_t num = alloc_block((uint32_t *)mmap_ptr(tmp->d_bitmap_ptr), tmp->num_data_blocks / 32);
@@ -41,6 +47,33 @@ off_t alloc_database() {
     }
     return tmp->d_blocks_ptr + BLOCK_SIZE * num;
 }
+
+struct wfs_inode *alloc_inode() {
+    struct wfs_sb *temp = (struct wfs_sb *)mapped_region;
+    off_t num = alloc_block((uint32_t *)mmap_ptr(temp->i_bitmap_ptr), temp->num_inodes / 32);
+    if (num < 0) {
+        return_code = -ENOSPC;
+        return NULL;
+    }
+    struct wfs_inode *inode = (struct wfs_inode *)((char *)mmap_ptr(temp->i_blocks_ptr) + num * BLOCK_SIZE);
+    inode->num = num;
+    return inode;
+}
+
+void free_inode(struct wfs_inode *inode) {
+    // Clear the contents of the inode structure
+    memset(inode, 0, sizeof(struct wfs_inode));
+
+    // Calculate the block number of the inode based on its location in memory
+    char *inode_start = (char *)inode;
+    char *blocks_ptr = (char *)mmap_ptr(((struct wfs_sb *)mapped_region)->i_blocks_ptr);
+    off_t block_index = (inode_start - blocks_ptr) / BLOCK_SIZE;
+
+    // Free the corresponding block in the bitmap
+    uint32_t *bitmap_ptr = (uint32_t *)mmap_ptr(((struct wfs_sb *)mapped_region)->i_bitmap_ptr);
+    free_bitmap(block_index, bitmap_ptr);
+}
+
 
 
 struct wfs_inode *find_inode(int num) {
@@ -191,8 +224,76 @@ static int wfs_mknod(const char *path, mode_t mode, dev_t rdev) {
 
 // mkdir: Create a directory with the specified mode
 static int wfs_mkdir(const char *path, mode_t mode) {
-    printf("mkdir called for path: %s, mode: %o\n", path, mode);
-    return -ENOSYS; // Operation not implemented
+        struct wfs_inode *parent = NULL;
+    char *dir = strdup(path);
+    char *file = strdup(path);
+
+    if (!file || !dir) {
+        free(dir);
+        free(file);
+        return -ENOMEM;
+    }
+
+    // Get parent directory inode
+    if (find_inode_path(dirname(dir), &parent) < 0) {
+        free(dir);
+        free(file);
+        return return_code;  // error code from find_inode_path
+    }
+
+    // Allocate a new inode for the directory
+    struct wfs_inode *inode = alloc_inode();
+    if (inode == NULL) {
+        free(dir);
+        free(file);
+        return -ENOSPC;
+    }
+
+    // Set up the directory's inode
+    inode->mode = S_IFDIR | mode;  // Set directory mode
+    inode->uid = getuid();         // Set user ID
+    inode->gid = getgid();         // Set group ID
+    inode->size = 0;               // Directory size (initially 0)
+    inode->nlinks = 2;             // '.' and '..' links for the directory
+
+    // Directory entry (child directory entry in parent directory)
+    struct wfs_dentry *entry;
+    off_t offset = 0;
+    bool entry_found = false;
+
+    // Try to find an empty spot in the parent directory to add the new entry
+    while (offset < parent->size) {
+        entry = (struct wfs_dentry *)find_offset(parent, offset, 0);
+        if (entry != NULL && entry->num == 0) {
+            entry->num = inode->num;  // Link inode number to entry
+            strncpy(entry->name, basename(file), MAX_NAME);  // Set the directory name
+            parent->nlinks++;  // Increment parent directory's link count
+            entry_found = true;
+            break;
+        }
+        offset += sizeof(struct wfs_dentry);
+    }
+
+    // If no empty entry found, allocate new entry at the end of the parent directory
+    if (!entry_found) {
+        entry = (struct wfs_dentry *)find_offset(parent, parent->size, 1);
+        if (entry == NULL) {
+            free_inode(inode);  // Free the inode if no space is found
+            free(dir);
+            free(file);
+            return -ENOSPC;
+        }
+        entry->num = inode->num;  // Link inode number to entry
+        strncpy(entry->name, basename(file), MAX_NAME);  // Set the directory name
+        parent->nlinks++;  // Increment parent directory's link count
+        parent->size += sizeof(struct wfs_dentry);  // Increase parent directory size
+    }
+
+    // Clean up
+    free(dir);
+    free(file);
+
+    return 0;  // Return success
 }
 
 // unlink: Remove a file
