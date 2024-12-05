@@ -33,6 +33,7 @@ struct wfs_sb {
     off_t i_blocks_ptr;
     off_t d_blocks_ptr;
     // Extend after this line
+    
     int num_disks;
     int raid_mode;
 };
