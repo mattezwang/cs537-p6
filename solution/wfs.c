@@ -71,7 +71,6 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  printf("Hawk Tuah!\n");
   for (int i = 0; i < argc; i++) {
     printf("  argv[%d]: %s\n", i, argv[i]);
   }
@@ -102,7 +101,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Copy FUSE-related arguments to fuse_argv (skip argv[0] and disk image paths)
-  fuse_argv[0] = "wfs";
+  fuse_argv[0] = argv[0];
   for (int i = num_disks + 1; i < argc; i++) {
     fuse_argv[i - num_disks] = argv[i];
   }
