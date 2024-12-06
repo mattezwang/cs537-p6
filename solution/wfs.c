@@ -305,6 +305,11 @@ int main(int argc, char *argv[]) {
     int fd;
 
     for (int i = 1; i < argc - 1; i++) {
+        if (access(argv[i], F_OK) != 0) {
+            fprintf(stderr, "Error: Disk image '%s' does not exist.\n", argv[i]);
+            return 1;
+        }
+
         fd = open(argv[i], O_RDWR);
         if (fd < 0) {
             perror("Error opening disk image");
@@ -329,3 +334,4 @@ int main(int argc, char *argv[]) {
     superblock = (struct wfs_sb *)mapped_region;
     return fuse_main(argc - (argc - 2), &argv[argc - 2], &ops, NULL);
 }
+
