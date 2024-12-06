@@ -145,6 +145,8 @@ int my_getattr(const char *path, struct stat *stbuf) {
         return -ENOENT;
     }
 
+    printf("inode num is %i\n", inode->num);
+
     // Populate stat structure
     stbuf->st_mode = inode->mode;
     stbuf->st_uid = inode->uid;
