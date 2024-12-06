@@ -66,6 +66,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    fprintf("ARGV ORIGINALLY");
+    for (int i = 0; i < argc; i++) {
+        printf("  argv[%d]: %s\n", i, argv[i]);
+    }
+
     // Identify disk image arguments
     int num_disks = 0;
     while (num_disks + 1 < argc && argv[num_disks + 1][0] != '-') {
