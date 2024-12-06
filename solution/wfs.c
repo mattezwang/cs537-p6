@@ -145,7 +145,7 @@ struct wfs_inode *locate_inode (const char* path) {
 
 
 
-int my_getattr(const char *path, struct stat *stbuf) {
+int wfs_getattr(const char *path, struct stat *stbuf) {
 
     printf("Get attribute starting\n");
     memset(stbuf, 0, sizeof(struct stat));
@@ -185,12 +185,12 @@ int my_getattr(const char *path, struct stat *stbuf) {
     return 0;
 }
 
-int my_mknod() {
+int wfs_mknod() {
     printf("hello2\n");
     return 0;
 }
 
-int my_mkdir(const char *path, mode_t mode) {
+int wfs_mkdir(const char *path, mode_t mode) {
 
     printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
@@ -248,43 +248,42 @@ int my_mkdir(const char *path, mode_t mode) {
     // return 0;
 }
 
-int my_unlink() {
+int wfs_unlink() {
     printf("hello4\n");
     return 0;
 }
 
-int my_rmdir() {
+int wfs_rmdir() {
     printf("hello5\n");
     return 0;
 }
 
-int my_read() {
+int wfs_read() {
     printf("hello6\n");
     return 0;
 }
 
-int my_write() {
+int wfs_write() {
     printf("hello7\n");
     return 0;
 }
 
-int my_readdir() {
+int wfs_readdir() {
     printf("hello8\n");
     return 0;
 }
 
 
 static struct fuse_operations ops = {
-    .getattr = my_getattr,
-    .mknod   = my_mknod,
-    .mkdir   = my_mkdir,
-    .unlink  = my_unlink,
-    .rmdir   = my_rmdir,
-    .read    = my_read,
-    .write   = my_write,
-    .readdir = my_readdir,
+    .getattr = wfs_getattr,
+    .mknod   = wfs_mknod,
+    .mkdir   = wfs_mkdir,
+    .unlink  = wfs_unlink,
+    .rmdir   = wfs_rmdir,
+    .read    = wfs_read,
+    .write   = wfs_write,
+    .readdir = wfs_readdir,
 };
-
 
 
 int main(int argc, char *argv[]) {
