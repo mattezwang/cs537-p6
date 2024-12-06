@@ -308,7 +308,7 @@ int main(int argc, char *argv[]) {
 
 
         struct stat temp;
-        if (fstat(fds[0], &temp) < 0) {
+        if (fstat(fds[i], &temp) < 0) {
             perror("Error getting file stats this is our own error");
             exit(1);
         }
