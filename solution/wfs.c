@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    fprintf("ARGV ORIGINALLY");
+    printf("ARGV ORIGINALLY\n");
     for (int i = 0; i < argc; i++) {
         printf("  argv[%d]: %s\n", i, argv[i]);
     }
