@@ -9,6 +9,8 @@
 #include <stdbool.h>
 #include "wfs.h"
 
+#include <libgen.h>
+
 void *mapped_region;
 struct wfs_sb *superblock;
 
@@ -59,20 +61,29 @@ static int my_getattr(const char *path, struct stat *stbuf) {
 }
 
 static int my_mknod(const char *path, mode_t mode, dev_t rdev) {
-    char *dir_path = strdup(path);
-    char *file_name = basename(dir_path);
-    struct wfs_inode *parent_inode = find_inode(0); // Assume root for simplicity
-
-    if (!parent_inode || parent_inode->mode != (S_IFDIR | 0755)) {
-        free(dir_path);
-        return -ENOENT;
+    char *dir_path = strdup(path); // Duplicate path to avoid modifying the original
+    if (!dir_path) {
+        return -ENOMEM; // Handle memory allocation failure
     }
 
+    char *file_name = basename(dir_path); // Extract the file name
+    if (!file_name) {
+        free(dir_path);
+        return -EINVAL; // Invalid argument
+    }
+
+    struct wfs_inode *parent_inode = find_inode(0); // Assume root for simplicity
+    if (!parent_inode || parent_inode->mode != (S_IFDIR | 0755)) {
+        free(dir_path);
+        return -ENOENT; // Parent directory not found
+    }
+
+    // Check if the file already exists
     struct wfs_dentry *entries = (struct wfs_dentry *)((char *)mapped_region + block_offset(parent_inode->blocks[0]));
     for (int i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
         if (strcmp(entries[i].name, file_name) == 0) {
             free(dir_path);
-            return -EEXIST;
+            return -EEXIST; // File exists
         }
     }
 
@@ -88,7 +99,7 @@ static int my_mknod(const char *path, mode_t mode, dev_t rdev) {
     }
     if (new_inode_num == -1) {
         free(dir_path);
-        return -ENOSPC;
+        return -ENOSPC; // No space left
     }
 
     struct wfs_inode *new_inode = find_inode(new_inode_num);
@@ -107,6 +118,7 @@ static int my_mknod(const char *path, mode_t mode, dev_t rdev) {
     free(dir_path);
     return 0;
 }
+
 
 
 static int my_mkdir(const char *path, mode_t mode) {
