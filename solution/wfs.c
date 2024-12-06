@@ -120,9 +120,86 @@ static int my_mknod(const char *path, mode_t mode, dev_t rdev) {
 }
 
 
-
 static int my_mkdir(const char *path, mode_t mode) {
-    return my_mknod(path, S_IFDIR | mode, 0);
+    char *dir_path = strdup(path);
+    if (!dir_path) {
+        return -ENOMEM;
+    }
+
+    char *dir_name = basename(dir_path);
+    if (!dir_name) {
+        free(dir_path);
+        return -EINVAL;
+    }
+
+    // Find the parent directory's inode (root inode in this example)
+    struct wfs_inode *parent_inode = find_inode(0);
+    if (!parent_inode || parent_inode->mode != (S_IFDIR | 0755)) {
+        free(dir_path);
+        return -ENOENT;
+    }
+
+    // Check if the directory already exists
+    struct wfs_dentry *entries = (struct wfs_dentry *)((char *)mapped_region + block_offset(parent_inode->blocks[0]));
+    for (int i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
+        if (strcmp(entries[i].name, dir_name) == 0) {
+            free(dir_path);
+            return -EEXIST;
+        }
+    }
+
+    // Allocate a new inode for the directory
+    int new_inode_num = -1;
+    char *inode_bitmap = (char *)mapped_region + superblock->i_bitmap_ptr;
+    for (int i = 0; i < superblock->num_inodes; i++) {
+        if (!(inode_bitmap[i / 8] & (1 << (i % 8)))) {
+            inode_bitmap[i / 8] |= (1 << (i % 8));
+            new_inode_num = i;
+            break;
+        }
+    }
+    if (new_inode_num == -1) {
+        free(dir_path);
+        return -ENOSPC;
+    }
+
+    struct wfs_inode *new_inode = find_inode(new_inode_num);
+    memset(new_inode, 0, sizeof(struct wfs_inode));
+    new_inode->mode = S_IFDIR | mode;
+    new_inode->uid = getuid();
+    new_inode->gid = getgid();
+    new_inode->nlinks = 2; // "." and parent directory link
+    new_inode->atim = time(NULL);
+    new_inode->mtim = time(NULL);
+    new_inode->ctim = time(NULL);
+
+    // Allocate a data block for the new directory
+    int new_block = allocate_block();
+    if (new_block < 0) {
+        free(dir_path);
+        return -ENOSPC;
+    }
+    new_inode->blocks[0] = new_block;
+
+    // Initialize the new directory's data block with "." and ".."
+    struct wfs_dentry *dir_entries = (struct wfs_dentry *)((char *)mapped_region + block_offset(new_block));
+    memset(dir_entries, 0, BLOCK_SIZE);
+    strcpy(dir_entries[0].name, ".");
+    dir_entries[0].num = new_inode_num;
+    strcpy(dir_entries[1].name, "..");
+    dir_entries[1].num = 0; // Root directory inode
+
+    // Add the new directory entry to the parent directory
+    for (int i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
+        if (entries[i].name[0] == '\0') {
+            strcpy(entries[i].name, dir_name);
+            entries[i].num = new_inode_num;
+            break;
+        }
+    }
+
+    free(dir_path);
+    return 0;
 }
 
 static int my_unlink(const char *path) {
