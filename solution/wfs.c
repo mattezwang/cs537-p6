@@ -284,16 +284,6 @@ struct wfs_sb *superblock;
 //     return 0;
 // }
 
-static struct fuse_operations ops = {
-    .getattr = my_getattr,
-    .mknod   = my_mknod,
-    .mkdir   = my_mkdir,
-    .unlink  = my_unlink,
-    .rmdir   = my_rmdir,
-    .read    = my_read,
-    .write   = my_write,
-    .readdir = my_readdir,
-};
 
 int my_getattr() {
     return -1;
@@ -326,6 +316,18 @@ int my_write() {
 int my_readdir() {
     return -1;
 }
+
+
+static struct fuse_operations ops = {
+    .getattr = my_getattr,
+    .mknod   = my_mknod,
+    .mkdir   = my_mkdir,
+    .unlink  = my_unlink,
+    .rmdir   = my_rmdir,
+    .read    = my_read,
+    .write   = my_write,
+    .readdir = my_readdir,
+};
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
