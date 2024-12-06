@@ -304,7 +304,7 @@ int main(int argc, char *argv[]) {
 
     for(int i=0; i<num_disks; i++) {
         fds[i] = open(argv[i + 1], O_RDWR);
-        printf("fds[num_disks] == %i\n", fds[num_disks]);
+        printf("fds[i] == %i\n", fds[i]);
 
 
         struct stat temp;
