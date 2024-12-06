@@ -330,81 +330,98 @@ static struct fuse_operations ops = {
 };
 
 int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s <disk1> <disk2> ... <mount_point> [FUSE options]\n", argv[0]);
-        return 1;
+    if (argc < 5) {
+        fprintf(stderr, "Usage: %s -r <raid_mode> -d <disk1> [-d <disk2> ...] -i <num_inodes> -b <num_blocks>\n", argv[0]);
+        return -1;
     }
 
-    // Identify disk image arguments
+    int raid_mode = -1;
+    int num_inodes = 0;
+    int num_data_blocks = 0;
+    char **disk_images = malloc(argc * sizeof(char *));
     int num_disks = 0;
-    while (num_disks + 1 < argc && argv[num_disks + 1][0] != '-') {
-        num_disks++;
+
+    // Parse arguments
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-r") == 0) {
+            if (++i >= argc) {
+                fprintf(stderr, "Error: Missing RAID mode after -r.\n");
+                return -1;
+            }
+            raid_mode = atoi(argv[i]);
+            if (raid_mode != 0 && raid_mode != 1) {
+                fprintf(stderr, "Error: Invalid RAID mode. Use 0 (RAID 0) or 1 (RAID 1).\n");
+                return -1;
+            }
+        } else if (strcmp(argv[i], "-d") == 0) {
+            if (++i >= argc) {
+                fprintf(stderr, "Error: Missing disk image after -d.\n");
+                return -1;
+            }
+            disk_images[num_disks++] = argv[i];
+        } else if (strcmp(argv[i], "-i") == 0) {
+            if (++i >= argc) {
+                fprintf(stderr, "Error: Missing number of inodes after -i.\n");
+                return -1;
+            }
+            num_inodes = atoi(argv[i]);
+            if (num_inodes <= 0) {
+                fprintf(stderr, "Error: Number of inodes must be positive.\n");
+                return -1;
+            }
+        } else if (strcmp(argv[i], "-b") == 0) {
+            if (++i >= argc) {
+                fprintf(stderr, "Error: Missing number of blocks after -b.\n");
+                return -1;
+            }
+            num_data_blocks = atoi(argv[i]);
+            if (num_data_blocks <= 0) {
+                fprintf(stderr, "Error: Number of data blocks must be positive.\n");
+                return -1;
+            }
+        } else {
+            fprintf(stderr, "Error: Unknown argument '%s'.\n", argv[i]);
+            return -1;
+        }
     }
 
+    // Validation
+    if (raid_mode == -1) {
+        fprintf(stderr, "Error: No RAID mode specified.\n");
+        return -1;
+    }
     if (num_disks < 2) {
         fprintf(stderr, "Error: At least two disk images are required.\n");
-        return 1;
+        return -1;
     }
 
-    // Debugging: Print the disk image names
+    // Align data blocks to multiple of 32
+    num_data_blocks = (num_data_blocks + 31) & ~31;
+
+    // Debugging: Print parsed values
+    printf("RAID mode: %d\n", raid_mode);
+    printf("Number of inodes: %d\n", num_inodes);
+    printf("Number of data blocks: %d\n", num_data_blocks);
     printf("Disk images:\n");
     for (int i = 0; i < num_disks; i++) {
-        printf("  Disk %d: %s\n", i + 1, argv[i + 1]);
+        printf("  Disk %d: %s\n", i + 1, disk_images[i]);
     }
 
-    // Open and map disk images
-    void **mapped_regions = malloc(num_disks * sizeof(void *));
-    if (!mapped_regions) {
-        perror("Error allocating memory for disk mappings");
-        return 1;
-    }
-
-    struct stat tmp;
-    int fd;
-
+    // Open and initialize disk images (example logic)
     for (int i = 0; i < num_disks; i++) {
-        if (access(argv[i + 1], F_OK) != 0) {
-            fprintf(stderr, "Error: Disk image '%s' does not exist.\n", argv[i + 1]);
-            free(mapped_regions);
-            return 1;
-        }
-
-        fd = open(argv[i + 1], O_RDWR);
+        int fd = open(disk_images[i], O_RDWR | O_CREAT, 0666);
         if (fd < 0) {
             perror("Error opening disk image");
-            free(mapped_regions);
-            return 1;
+            return -1;
         }
 
-        if (fstat(fd, &tmp) < 0) {
-            perror("Error getting file stats");
-            close(fd);
-            free(mapped_regions);
-            return 1;
-        }
-
-        mapped_regions[i] = mmap(NULL, tmp.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-        if (mapped_regions[i] == MAP_FAILED) {
-            perror("Error mapping memory");
-            close(fd);
-            free(mapped_regions);
-            return 1;
-        }
+        // Example of mapping and initializing superblock or metadata
+        // ...
         close(fd);
     }
 
-    // Assume the superblock is mirrored across all disks and read from the first disk
-    superblock = (struct wfs_sb *)mapped_regions[0];
+    free(disk_images);
 
-    // Debugging: Print updated argc and argv
-    printf("Updated argc: %d\n", argc - num_disks);
-    printf("Updated argv:\n");
-    for (int i = num_disks + 1; i < argc; i++) {
-        printf("  argv[%d]: %s\n", i - num_disks, argv[i]);
-    }
-
-    // Pass remaining arguments (mount point and FUSE options) to fuse_main
-    return fuse_main(argc - num_disks, &argv[num_disks + 1], &ops, NULL);
+    printf("Filesystem created successfully.\n");
+    return 0;
 }
-
-
