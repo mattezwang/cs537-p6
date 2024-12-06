@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include "wfs.h"
-#include <conio.h>
 
 void **mapped_regions;
 int *fds;
@@ -193,16 +192,16 @@ int wfs_mknod() {
 
 int wfs_mkdir(const char *path, mode_t mode) {
 
-    cprintf("Starting mkdir\n");
+    printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
     struct wfs_inode *inode_table = (struct wfs_inode *)((char *)mapped_regions[0] + superblock->i_blocks_ptr);
     size_t num_inodes = superblock->num_inodes;
-    cprintf("Superblock set, table set, num_inodes set\n");
+    printf("Superblock set, table set, num_inodes set\n");
 
     // Find a free inode
     struct wfs_inode *new_inode = NULL;
     for (size_t i = 0; i < num_inodes; i++) {
-      cprintf("inode: %zd \n", i);
+      printf("inode: %zd \n", i);
       if (inode_table[i].nlinks == 0) {
         new_inode = &inode_table[i];
         break;
@@ -210,7 +209,7 @@ int wfs_mkdir(const char *path, mode_t mode) {
     }
 
     if (!new_inode) {
-      cprintf("No INODE\n");
+      printf("No INODE\n");
       return -ENOSPC;
     }
 
@@ -227,15 +226,15 @@ int wfs_mkdir(const char *path, mode_t mode) {
     // Find a free directory entry
     struct wfs_inode *parent_inode = locate_inode("/"); // Assuming root for simplicity
     if (!parent_inode) {
-      cprintf("Root INODE not found");
+      printf("Root INODE not found");
       return -ENOENT;
     }
 
     struct wfs_dentry *dentry_table = (struct wfs_dentry *)((char *)mapped_regions[0] + parent_inode->blocks[0]);
     for (size_t i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
-      cprintf("dentry: %zd \n", i);
+      printf("dentry: %zd \n", i);
       if (dentry_table[i].num == 0) {
-        cprintf("Creating new directory");
+        printf("Creating new directory");
         strncpy(dentry_table[i].name, path, MAX_NAME);
         dentry_table[i].num = new_inode - inode_table; // Index of the new inode
         parent_inode->nlinks++;
