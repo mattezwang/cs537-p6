@@ -52,6 +52,8 @@ struct wfs_inode *locate_inode (const char* path) {
 
     printf("locate inode starting\n");
 
+    printf("this is the path: %s\n", path);
+
     // Start with the root inode
     struct wfs_inode *curr_inode = find_inode_from_num(0);
 
@@ -163,11 +165,11 @@ int wfs_getattr(const char *path, struct stat *stbuf) {
     printf("in my_getattr, just called locate_inode\n");
     struct wfs_inode *inode = locate_inode(path);
     printf("in my_getattr, just finished locate_inode\n");
-    printf("Found INODE\n");
     if (!inode) {
         printf("No INODE!\n");
         return -ENOENT;
     }
+    printf("Found INODE\n");
 
     printf("inode num is %i\n", inode->num);
 
@@ -191,15 +193,12 @@ int wfs_mknod() {
 }
 
 int wfs_mkdir(const char *path, mode_t mode) {
-
-    int test10check = open("test10check.txt", O_RDWR|O_CREAT|O_APPEND, 0600);
-    int save_out = dup(fileno(stdout));
-
-    puts("Starting mkdir\n");
+    
+    printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
     struct wfs_inode *inode_table = (struct wfs_inode *)((char *)mapped_regions[0] + superblock->i_blocks_ptr);
     size_t num_inodes = superblock->num_inodes;
-    puts("Superblock set, table set, num_inodes set\n");
+    printf("Superblock set, table set, num_inodes set\n");
 
     // Find a free inode
     struct wfs_inode *new_inode = NULL;
@@ -212,7 +211,7 @@ int wfs_mkdir(const char *path, mode_t mode) {
     }
 
     if (!new_inode) {
-      puts("No INODE\n");
+      printf("No INODE\n");
       return -ENOSPC;
     }
 
@@ -229,7 +228,7 @@ int wfs_mkdir(const char *path, mode_t mode) {
     // Find a free directory entry
     struct wfs_inode *parent_inode = locate_inode("/"); // Assuming root for simplicity
     if (!parent_inode) {
-      puts("Root INODE not found");
+      printf("Root INODE not found");
       return -ENOENT;
     }
 
@@ -237,17 +236,13 @@ int wfs_mkdir(const char *path, mode_t mode) {
     for (size_t i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
       printf("dentry: %zd \n", i);
       if (dentry_table[i].num == 0) {
-        puts("Creating new directory");
+        printf("Creating new directory");
         strncpy(dentry_table[i].name, path, MAX_NAME);
         dentry_table[i].num = new_inode - inode_table; // Index of the new inode
         parent_inode->nlinks++;
         return 0;
       }
     }
-
-    fflush(stdout); close(test10check);
-    dup2(save_out, fileno(stdout));
-    close(save_out);
 
     return -ENOSPC;
 
