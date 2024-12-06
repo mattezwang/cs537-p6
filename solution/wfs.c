@@ -96,7 +96,6 @@ int main(int argc, char *argv[]) {
     }
 
     // Copy FUSE-related arguments to fuse_argv
-    fuse_argv[0] = argv[0]; // Program name
     for (int i = num_disks + 1; i < argc; i++) {
         fuse_argv[i - num_disks] = argv[i];
     }
