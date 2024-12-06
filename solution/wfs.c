@@ -297,14 +297,26 @@ static struct fuse_operations ops = {
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
-        fprintf(stderr, "Usage: %s <disk1> <disk2> ... <mount_point>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <disk1> <disk2> ... <mount_point> [FUSE options]\n", argv[0]);
+        return 1;
+    }
+
+    // Determine the number of disk image files
+    int num_disks = 0;
+    for (int i = 1; i < argc - 1; i++) {
+        if (argv[i][0] == '-') break; // Stop at the first FUSE option
+        num_disks++;
+    }
+
+    if (num_disks < 2) {
+        fprintf(stderr, "Error: At least two disk images are required.\n");
         return 1;
     }
 
     struct stat tmp;
     int fd;
 
-    for (int i = 1; i < argc - 1; i++) {
+    for (int i = 1; i <= num_disks; i++) {
         if (access(argv[i], F_OK) != 0) {
             fprintf(stderr, "Error: Disk image '%s' does not exist.\n", argv[i]);
             return 1;
@@ -332,6 +344,8 @@ int main(int argc, char *argv[]) {
     }
 
     superblock = (struct wfs_sb *)mapped_region;
-    return fuse_main(argc - (argc - 2), &argv[argc - 2], &ops, NULL);
+
+    // Pass FUSE options and mount point to fuse_main
+    return fuse_main(argc - num_disks, &argv[num_disks + 1], &ops, NULL);
 }
 
