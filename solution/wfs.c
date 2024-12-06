@@ -305,8 +305,16 @@ int main(int argc, char *argv[]) {
 
   mapped_regions = malloc(num_disks * sizeof(void *));
 
+
+    // this probably isnt right
+  struct stat temp;
+  if (fstat(fds[0], &temp) < 0) {
+        perror("Error getting file stats");
+        exit(1);
+    }
+
   for (int i = 0; i < num_disks; i++) {
-    mapped_regions[i] = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fds[i], 0);
+    mapped_regions[i] = mmap(NULL, temp.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fds[i], 0);
     if (mapped_regions[i] == MAP_FAILED) {
         exit(EXIT_FAILURE);
     }
