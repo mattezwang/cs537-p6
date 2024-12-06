@@ -15,6 +15,8 @@ void *mapped_region;
 
 struct wfs_inode *find_inode_from_num (int num) {
 
+    printf("find inode from num starting\n");
+
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_region;
     int bits = 32;
 
@@ -35,6 +37,8 @@ struct wfs_inode *find_inode_from_num (int num) {
 
 
 struct wfs_inode *locate_inode (const char* path) {
+
+    printf("locate inode starting\n");
 
     // Start with the root inode
     struct wfs_inode *curr_inode = find_inode_from_num(0);
