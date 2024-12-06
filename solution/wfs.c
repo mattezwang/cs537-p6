@@ -19,12 +19,12 @@ struct wfs_inode *find_inode_from_num (int num) {
 
     printf("find inode from num starting\n");
 
-    struct wfs_sb *superblock = (struct wfs_sb *) mapped_region;
+    struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
     printf("checkpoint 1\n");
     int bits = 32;
 
     // Access the inode bitmap directly using the offset
-    uint32_t *inode_bitmap = (uint32_t *)((char *) mapped_region + superblock->i_bitmap_ptr);
+    uint32_t *inode_bitmap = (uint32_t *)((char *) mapped_regions[0] + superblock->i_bitmap_ptr);
 
     printf("checkpoint 2\n");
 
@@ -40,7 +40,7 @@ struct wfs_inode *find_inode_from_num (int num) {
 
     printf("checkpoint 5\n");
 
-    char *inode_table = ((char *) mapped_region) + superblock->i_blocks_ptr;
+    char *inode_table = ((char *) mapped_regions[0]) + superblock->i_blocks_ptr;
     printf("checkpoint 6\n");
     printf("find inode from num finished\n");
     return (struct wfs_inode *)((num * BLOCK_SIZE) + inode_table);
@@ -95,9 +95,9 @@ struct wfs_inode *locate_inode (const char* path) {
                 continue;
             } 
 
-            struct wfs_sb *superblock = (struct wfs_sb *) mapped_region;
+            struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
             // first get the mapped region offset, then the block we are on, then the offset within the block
-            char* location = (char *) mapped_region + superblock->d_blocks_ptr + (curr_inode->blocks[i] * BLOCK_SIZE);
+            char* location = (char *) mapped_regions[0] + superblock->d_blocks_ptr + (curr_inode->blocks[i] * BLOCK_SIZE);
 
             // Read directory entries from the block
             struct wfs_dentry *dentry= (struct wfs_dentry *)(location);
@@ -193,8 +193,8 @@ int my_mknod() {
 int my_mkdir(const char *path, mode_t mode) {
 
     printf("Starting mkdir\n");
-    struct wfs_sb *superblock = (struct wfs_sb *) mapped_region;
-    struct wfs_inode *inode_table = (struct wfs_inode *)((char *)mapped_region + superblock->i_blocks_ptr);
+    struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
+    struct wfs_inode *inode_table = (struct wfs_inode *)((char *)mapped_regions[0] + superblock->i_blocks_ptr);
     size_t num_inodes = superblock->num_inodes;
     printf("Superblock set, table set, num_inodes set\n");
 
@@ -230,7 +230,7 @@ int my_mkdir(const char *path, mode_t mode) {
       return -ENOENT;
     }
 
-    struct wfs_dentry *dentry_table = (struct wfs_dentry *)((char *)mapped_region + parent_inode->blocks[0]);
+    struct wfs_dentry *dentry_table = (struct wfs_dentry *)((char *)mapped_regions[0] + parent_inode->blocks[0]);
     for (size_t i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
       printf("dentry: %zd \n", i);
       if (dentry_table[i].num == 0) {
