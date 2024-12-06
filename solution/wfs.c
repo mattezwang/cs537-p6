@@ -331,6 +331,8 @@ static struct fuse_operations ops = {
     .readdir = my_readdir,
 };
 
+void *mapped_regions[10]; // Adjust size for max supported disks
+
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <disk1> <disk2> ... <mount_point> [FUSE options]\n", argv[0]);
