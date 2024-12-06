@@ -349,33 +349,22 @@ int main(int argc, char *argv[]) {
     }
 
     // Open and map disk images
-    void **mapped_regions = malloc(num_disks * sizeof(void *));
-    if (!mapped_regions) {
-        perror("Error allocating memory for disk mappings");
-        return -1;
-    }
-
     struct stat tmp;
-    int fd;
-
     for (int i = 0; i < num_disks; i++) {
         if (access(argv[i + 1], F_OK) != 0) {
             fprintf(stderr, "Error: Disk image '%s' does not exist.\n", argv[i + 1]);
-            free(mapped_regions);
             return -1;
         }
 
-        fd = open(argv[i + 1], O_RDWR);
+        int fd = open(argv[i + 1], O_RDWR);
         if (fd < 0) {
             perror("Error opening disk image");
-            free(mapped_regions);
             return -1;
         }
 
         if (fstat(fd, &tmp) < 0) {
             perror("Error getting file stats");
             close(fd);
-            free(mapped_regions);
             return -1;
         }
 
@@ -383,7 +372,6 @@ int main(int argc, char *argv[]) {
         if (mapped_regions[i] == MAP_FAILED) {
             perror("Error mapping memory");
             close(fd);
-            free(mapped_regions);
             return -1;
         }
         close(fd);
@@ -392,25 +380,58 @@ int main(int argc, char *argv[]) {
     // Assume the superblock is mirrored across all disks and read from the first disk
     superblock = (struct wfs_sb *)mapped_regions[0];
 
-    // Adjust argc and argv for FUSE
-    int fuse_argc = argc - num_disks;
-    char **fuse_argv = &argv[num_disks];
+    // Debugging: Print superblock information
+    printf("Superblock:\n");
+    printf("  num_disks: %d\n", superblock->num_disks);
+    printf("  raid_mode: %d\n", superblock->raid_mode);
 
-    // Debugging: Print updated argc and argv for FUSE
-    printf("FUSE argc: %d\n", fuse_argc);
-    printf("FUSE argv:\n");
+    // Validate disk count matches superblock
+    if (superblock->num_disks != num_disks) {
+        fprintf(stderr, "Error: Expected %d disks but got %d.\n", superblock->num_disks, num_disks);
+        return -1;
+    }
+
+    // Ensure the mount point is valid and empty
+    const char *mount_point = argv[num_disks + 1];
+    struct stat st;
+    if (stat(mount_point, &st) != 0 || !S_ISDIR(st.st_mode)) {
+        fprintf(stderr, "Error: Mount point '%s' does not exist or is not a directory.\n", mount_point);
+        return -1;
+    }
+
+    // Check if directory is empty
+    DIR *dir = opendir(mount_point);
+    if (!dir) {
+        perror("Error opening mount point");
+        return -1;
+    }
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            fprintf(stderr, "Error: Mount point '%s' is not empty.\n", mount_point);
+            closedir(dir);
+            return -1;
+        }
+    }
+    closedir(dir);
+
+    // Prepare arguments for FUSE
+    int fuse_argc = argc - num_disks;
+    char **fuse_argv = &argv[num_disks + 1];
+
+    // Debugging: Print FUSE arguments
+    printf("FUSE arguments:\n");
     for (int i = 0; i < fuse_argc; i++) {
         printf("  argv[%d]: %s\n", i, fuse_argv[i]);
     }
 
-    // Pass remaining arguments (mount point and FUSE options) to fuse_main
+    // Start FUSE
     int result = fuse_main(fuse_argc, fuse_argv, &ops, NULL);
 
-    // Free resources
+    // Cleanup
     for (int i = 0; i < num_disks; i++) {
         munmap(mapped_regions[i], tmp.st_size);
     }
-    free(mapped_regions);
 
     return result;
 }
