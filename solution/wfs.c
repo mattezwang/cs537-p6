@@ -423,5 +423,6 @@ int main(int argc, char *argv[]) {
     free(disk_images);
 
     printf("Filesystem created successfully.\n");
-    return 0;
+    return fuse_main(argc - num_disks, &argv[num_disks + 1], &ops, NULL);
+
 }
