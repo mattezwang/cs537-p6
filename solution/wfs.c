@@ -55,7 +55,14 @@ struct wfs_inode *locate_inode (char* path) {
     // Start with the root inode
     struct wfs_inode *curr_inode = find_inode_from_num(0);
     
-    if (!curr_inode || !(curr_inode->mode & S_IFDIR)) {
+    // check if root node is inode
+    if (!curr_inode) {
+        free(temp_path);
+        return -1;
+    }
+
+    // check if curr inode is directory
+    if (!(curr_inode->mode & S_IFDIR)) {
         free(temp_path);
         return -1;
     }
@@ -67,33 +74,45 @@ struct wfs_inode *locate_inode (char* path) {
 
         // Iterate through directory blocks of the current inode
         for (int i = 0; i < D_BLOCK; i++) {
-            if (!curr_inode->blocks[i]) continue;
+
+            // doesn't have blocks to check
+            if (curr_inode->blocks[i] == 0) {
+                continue;
+            } 
+
+            // first get the mapped region offset, then the block we are on, then the offset within the block
+            char* location = (char *) mapped_region + superblock->d_blocks_ptr + (curr_inode->blocks[i] * BLOCK_SIZE);
 
             // Read directory entries from the block
-            struct wfs_dentry *dentry_table = (struct wfs_dentry *)((char *)mapped_region + block_offset(curr_inode->blocks[i]));
+            struct wfs_dentry *dentry= (struct wfs_dentry *)(location);
+
             for (size_t j = 0; j < BLOCK_SIZE / sizeof(struct wfs_dentry); j++) {
-                if (strcmp(dentry_table[j].name, token) == 0) {
-                    // Found the matching entry; move to its inode
-                    curr_inode = get_inode(dentry_table[j].num);
+
+                if (strcmp(dentry[j].name, token) == 0) {
+                    
+                    curr_inode = find_inode_from_num(dentry[j].num);
                     found = true;
                     break;
                 }
             }
-            if (found) break; // Exit directory block loop
+            if (found) {
+                break; // Exit directory block loop
+            }
         }
 
         if (!found) {
             // Path component not found
             free(temp_path);
-            return NULL;
+            return -1;
         }
-
-        // Get the next token
-        token = strtok(NULL, "/");
+        else {
+            // Get the next token
+            token = strtok(NULL, "/");
+        }
     }
 
     free(path_copy);
-    return current_inode; // Return the inode of the final token
+    return curr_inode;
 }
 
 
