@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Identify disk image arguments
-  num_disks = 0;
+  int num_disks = 0;
   while (num_disks + 1 < argc && argv[num_disks + 1][0] != '-') {
     num_disks++;
   }
