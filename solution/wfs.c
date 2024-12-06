@@ -13,36 +13,42 @@ void *mapped_region;
 struct wfs_sb *superblock;
 
 int my_getattr() {
-    printf("hello\n");
+    printf("hello1\n");
     return 0;
 }
 
 int my_mknod() {
+    printf("hello2\n");
     return 0;
 }
 
 int my_mkdir() {
-    printf("hai\n");
+    printf("hai3\n");
     return 0;
 }
 
 int my_unlink() {
+    printf("hello4\n");
     return 0;
 }
 
 int my_rmdir() {
+    printf("hello5\n");
     return 0;
 }
 
 int my_read() {
+    printf("hello6\n");
     return 0;
 }
 
 int my_write() {
+    printf("hello7\n");
     return 0;
 }
 
 int my_readdir() {
+    printf("hello8\n");
     return 0;
 }
 
