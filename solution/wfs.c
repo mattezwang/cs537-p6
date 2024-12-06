@@ -94,6 +94,7 @@ struct wfs_inode *locate_inode (const char* path) {
 
             // doesn't have blocks to check
             if (curr_inode->blocks[i] == 0) {
+                printf("in locate_inode, we are SKIPPING\n");
                 continue;
             } 
 
