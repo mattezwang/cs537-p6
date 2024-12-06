@@ -59,7 +59,6 @@ static struct fuse_operations ops = {
 };
 
 
-
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <disk1> <disk2> ... <mount_point> [FUSE options]\n", argv[0]);
@@ -88,9 +87,19 @@ int main(int argc, char *argv[]) {
         printf("  Disk %d: %s\n", i + 1, argv[i + 1]);
     }
 
-    // Adjust argc and argv for FUSE
+    // Create a new array for FUSE arguments
     int fuse_argc = argc - num_disks;
-    char **fuse_argv = &argv[num_disks + 1];
+    char **fuse_argv = malloc(fuse_argc * sizeof(char *));
+    if (!fuse_argv) {
+        perror("Error allocating memory for FUSE arguments");
+        return -1;
+    }
+
+    // Copy FUSE-related arguments to fuse_argv
+    fuse_argv[0] = argv[0]; // Program name
+    for (int i = num_disks + 1; i < argc; i++) {
+        fuse_argv[i - num_disks] = argv[i];
+    }
 
     // Debug: Print updated argc and argv for FUSE
     printf("FUSE argc: %d\n", fuse_argc);
@@ -100,5 +109,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Start FUSE
-    return fuse_main(fuse_argc, fuse_argv, &ops, NULL);
+    int result = fuse_main(fuse_argc, fuse_argv, &ops, NULL);
+
+    // Free allocated memory
+    free(fuse_argv);
+
+    return result;
 }
