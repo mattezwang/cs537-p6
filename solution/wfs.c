@@ -300,6 +300,8 @@ int main(int argc, char *argv[]) {
     fds = realloc(fds, (num_disks + 1) * sizeof(int));
     fds[num_disks] = open(argv[num_disks + 1], O_RDWR);
 
+    printf("fds[num_disks] == %i\n", fds[num_disks]);
+
     num_disks++;
   }
 
@@ -309,9 +311,11 @@ int main(int argc, char *argv[]) {
     // this probably isnt right
   struct stat temp;
   if (fstat(fds[0], &temp) < 0) {
-        perror("Error getting file stats");
+        perror("Error getting file stats this is our own error");
         exit(1);
     }
+
+
 
   for (int i = 0; i < num_disks; i++) {
     mapped_regions[i] = mmap(NULL, temp.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fds[i], 0);
