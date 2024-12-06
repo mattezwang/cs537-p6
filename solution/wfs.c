@@ -107,6 +107,8 @@ struct wfs_inode *locate_inode (const char* path) {
             for (size_t j = 0; j < BLOCK_SIZE / sizeof(struct wfs_dentry); j++) {
 
                 if (strcmp(dentry[j].name, token) == 0) {
+
+                    printf("this is what is being compared: %s and %s\n", dentry[j].name, token);
                     
                     // this is now the "root"
                     // do this process again from the while loop with this as root now
@@ -308,7 +310,6 @@ int main(int argc, char *argv[]) {
     for(int i=0; i<num_disks; i++) {
         fds[i] = open(argv[i + 1], O_RDWR);
         printf("fds[i] == %i\n", fds[i]);
-
 
         struct stat temp;
         if (fstat(fds[i], &temp) != 0) {
