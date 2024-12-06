@@ -296,34 +296,29 @@ int main(int argc, char *argv[]) {
   // Identify disk image arguments
   int num_disks = 0;
   while (num_disks + 1 < argc && argv[num_disks + 1][0] != '-') {
-
-    fds = realloc(fds, (num_disks + 1) * sizeof(int));
-    fds[num_disks] = open(argv[num_disks + 1], O_RDWR);
-
-    printf("fds[num_disks] == %i\n", fds[num_disks]);
-
     num_disks++;
   }
 
   mapped_regions = malloc(num_disks * sizeof(void *));
+  fds = malloc(num_disks * sizeof(int));
+
+    for(int i=0; i<num_disks; i++) {
+        fds[i] = open(argv[i + 1], O_RDWR);
+        printf("fds[num_disks] == %i\n", fds[num_disks]);
 
 
-    // this probably isnt right
-  struct stat temp;
-  if (fstat(fds[0], &temp) < 0) {
-        perror("Error getting file stats this is our own error");
-        exit(1);
+        struct stat temp;
+        if (fstat(fds[0], &temp) < 0) {
+            perror("Error getting file stats this is our own error");
+            exit(1);
+        }
+
+        mapped_regions[i] = mmap(NULL, temp.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fds[i], 0);
+        if (mapped_regions[i] == MAP_FAILED) {
+            printf("this failed SDFJDAKLSFJDASLKFJ\n");
+            exit(EXIT_FAILURE);
+        }
     }
-
-
-
-  for (int i = 0; i < num_disks; i++) {
-    mapped_regions[i] = mmap(NULL, temp.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fds[i], 0);
-    if (mapped_regions[i] == MAP_FAILED) {
-        printf("this failed SDFJDAKLSFJDASLKFJ\n");
-        exit(EXIT_FAILURE);
-    }
-  }
 
   // Debug: Print disk images
   printf("Disk images:\n");
