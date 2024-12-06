@@ -92,11 +92,11 @@ struct wfs_inode *locate_inode (const char* path) {
         // Iterate through directory blocks of the current inode
         for (int i = 0; i < D_BLOCK; i++) {
 
-            // doesn't have blocks to check
-            if (curr_inode->blocks[i] == 0) {
-                printf("in locate_inode, we are SKIPPING\n");
-                continue;
-            } 
+            // // doesn't have blocks to check
+            // if (curr_inode->blocks[i] == 0) {
+            //     printf("in locate_inode, we are SKIPPING\n");
+            //     continue;
+            // } 
 
             struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
             // first get the mapped region offset, then the block we are on, then the offset within the block
