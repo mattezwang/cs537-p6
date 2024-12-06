@@ -166,7 +166,7 @@ int my_mknod() {
     return 0;
 }
 
-int my_mkdir() {
+int my_mkdir(const char *path, mode_t mode) {
 
     printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_region;
