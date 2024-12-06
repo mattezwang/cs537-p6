@@ -138,7 +138,7 @@ int my_getattr(const char *path, struct stat *stbuf) {
     }
 
     // Locate the file or directory in the inode table
-    struct wfs_inode *inode = locate_inode(const path);
+    struct wfs_inode *inode = locate_inode(path);
     printf("Found INODE\n");
     if (!inode) {
         printf("No INODE!\n");
