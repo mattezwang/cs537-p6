@@ -69,7 +69,7 @@ struct wfs_inode *locate_inode (const char* path) {
     // Tokenize the path
     char *token = strtok(temp_path, "/");
 
-    printf("this is what the token is in the beginning (trying to see if it's null or something): %s", token);
+    // printf("this is what the token is in the beginning (trying to see if it's null or something): %s", token);
 
     if (!token) {
         free(temp_path);
@@ -123,6 +123,9 @@ struct wfs_inode *locate_inode (const char* path) {
 
                     found = true;
                     break;
+                }
+                else {
+                    printf("This is the difference between %s and %s: %i\n", dentry[j].name, token, strcmp(dentry[j].name, token));
                 }
             }
             if (found) {
