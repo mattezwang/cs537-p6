@@ -106,10 +106,10 @@ struct wfs_inode *locate_inode (const char* path) {
 
             for (size_t j = 0; j < BLOCK_SIZE / sizeof(struct wfs_dentry); j++) {
 
-                if (strcmp(dentry[j].name, token) == 0) {
+                printf("this is what is being compared: %s and %s\n", dentry[j].name, token);
 
-                    printf("this is what is being compared: %s and %s\n", dentry[j].name, token);
-                    
+
+                if (strcmp(dentry[j].name, token) == 0) {                    
                     // this is now the "root"
                     // do this process again from the while loop with this as root now
 
