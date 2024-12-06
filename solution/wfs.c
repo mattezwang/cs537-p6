@@ -320,6 +320,7 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < num_disks; i++) {
     mapped_regions[i] = mmap(NULL, temp.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fds[i], 0);
     if (mapped_regions[i] == MAP_FAILED) {
+        printf("this failed SDFJDAKLSFJDASLKFJ\n")
         exit(EXIT_FAILURE);
     }
   }
