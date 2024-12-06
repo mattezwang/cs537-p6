@@ -126,6 +126,7 @@ struct wfs_inode *locate_inode (const char* path) {
 
         if (!found) {
             // Path component not found
+            printf("we did not find the thing for some reason \n");
             free(temp_path);
             return NULL;
         }
