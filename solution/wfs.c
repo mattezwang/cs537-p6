@@ -273,9 +273,11 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  for (int i = 0; i < argc; i++) {
-    printf("  argv[%d]: %s\n", i, argv[i]);
-  }
+
+// this was causing segfault lol
+//   for (int i = 0; i < argc; i++) {
+//     printf("  argv[%d]: %s\n", i, argv[i]);
+//   }
 
   // Identify disk image arguments
   int num_disks = 0;
