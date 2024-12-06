@@ -59,10 +59,24 @@ static int my_getattr(const char *path, struct stat *stbuf) {
 }
 
 static int my_mknod(const char *path, mode_t mode, dev_t rdev) {
-    // Find parent directory inode
-    struct wfs_inode *inode = find_inode(0); // Root inode for simplicity
-    if (!inode) return -ENOENT;
+    char *dir_path = strdup(path);
+    char *file_name = basename(dir_path);
+    struct wfs_inode *parent_inode = find_inode(0); // Assume root for simplicity
 
+    if (!parent_inode || parent_inode->mode != (S_IFDIR | 0755)) {
+        free(dir_path);
+        return -ENOENT;
+    }
+
+    struct wfs_dentry *entries = (struct wfs_dentry *)((char *)mapped_region + block_offset(parent_inode->blocks[0]));
+    for (int i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
+        if (strcmp(entries[i].name, file_name) == 0) {
+            free(dir_path);
+            return -EEXIST;
+        }
+    }
+
+    // Allocate a new inode and directory entry
     int new_inode_num = -1;
     char *inode_bitmap = (char *)mapped_region + superblock->i_bitmap_ptr;
     for (int i = 0; i < superblock->num_inodes; i++) {
@@ -72,7 +86,10 @@ static int my_mknod(const char *path, mode_t mode, dev_t rdev) {
             break;
         }
     }
-    if (new_inode_num == -1) return -ENOSPC;
+    if (new_inode_num == -1) {
+        free(dir_path);
+        return -ENOSPC;
+    }
 
     struct wfs_inode *new_inode = find_inode(new_inode_num);
     memset(new_inode, 0, sizeof(struct wfs_inode));
@@ -84,8 +101,13 @@ static int my_mknod(const char *path, mode_t mode, dev_t rdev) {
     new_inode->mtim = time(NULL);
     new_inode->ctim = time(NULL);
 
+    strcpy(entries[0].name, file_name);
+    entries[0].num = new_inode_num;
+
+    free(dir_path);
     return 0;
 }
+
 
 static int my_mkdir(const char *path, mode_t mode) {
     return my_mknod(path, S_IFDIR | mode, 0);
@@ -185,30 +207,36 @@ static struct fuse_operations ops = {
 };
 
 int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <disk1> <disk2> ... <mount_point>\n", argv[0]);
+        return 1;
+    }
+
     struct stat tmp;
     int fd;
-    char *disk = argv[1];
 
-    for (int i = 2; i < argc; i++) {
-        argv[i - 1] = argv[i];
-    }
-    argc = argc - 1;
-    if ((fd = open(disk, O_RDWR)) < 0) {
-        perror("Error opening disk image");
-        exit(1);
-    }
+    for (int i = 1; i < argc - 1; i++) {
+        fd = open(argv[i], O_RDWR);
+        if (fd < 0) {
+            perror("Error opening disk image");
+            return 1;
+        }
 
-    if (fstat(fd, &tmp) < 0) {
-        perror("Error getting file stats");
-        exit(1);
-    }
+        if (fstat(fd, &tmp) < 0) {
+            perror("Error getting file stats");
+            close(fd);
+            return 1;
+        }
 
-    mapped_region = mmap(NULL, tmp.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (mapped_region == MAP_FAILED) {
-        perror("Error mapping memory");
-        exit(1);
+        mapped_region = mmap(NULL, tmp.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        if (mapped_region == MAP_FAILED) {
+            perror("Error mapping memory");
+            close(fd);
+            return 1;
+        }
+        close(fd);
     }
 
     superblock = (struct wfs_sb *)mapped_region;
-    return fuse_main(argc, argv, &ops, NULL);
+    return fuse_main(argc - (argc - 2), &argv[argc - 2], &ops, NULL);
 }
