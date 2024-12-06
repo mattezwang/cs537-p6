@@ -124,9 +124,38 @@ struct wfs_inode *locate_inode (char* path) {
 
 
 
+int my_getattr(char *path, struct stat *stbuf) {
+    
+    printf("Get attribute starting\n");
+    memset(stbuf, 0, sizeof(struct stat));
+    printf("Memory set\n");
 
-int my_getattr() {
-    printf("hello1\n");
+    if (strcmp(path, "/") == 0) {
+        // Root directory
+        stbuf->st_mode = S_IFDIR | 0755;
+        stbuf->st_nlink = 2;
+        return 0;
+    }
+
+    // Locate the file or directory in the inode table
+    struct wfs_inode *inode = locate_inode(path);
+    printf("Found INODE\n");
+    if (!inode) {
+        printf("No INODE!\n");
+        return -ENOENT;
+    }
+
+    // Populate stat structure
+    stbuf->st_mode = inode->mode;
+    stbuf->st_uid = inode->uid;
+    stbuf->st_gid = inode->gid;
+    stbuf->st_size = inode->size;
+    stbuf->st_nlink = inode->nlinks;
+    stbuf->st_atime = inode->atim;
+    stbuf->st_mtime = inode->mtim;
+    stbuf->st_ctime = inode->ctim;
+    printf("Stat populated\n");
+
     return 0;
 }
 
