@@ -25,7 +25,7 @@ struct wfs_inode *find_inode_from_num (int num) {
     int array_idx = num / bits;
 
     if (!(inode_bitmap[array_idx] & (0x1 << bit_idx))) {
-        return -1;
+        return NULL;
     }
 
     char *inode_table = ((char *) mapped_region) + superblock->i_blocks_ptr;
@@ -36,37 +36,36 @@ struct wfs_inode *find_inode_from_num (int num) {
 
 struct wfs_inode *locate_inode (char* path) {
 
+    // Start with the root inode
+    struct wfs_inode *curr_inode = find_inode_from_num(0);
+
     if (strcmp(path, "/") == 0) {
-        return 0;
+        return curr_inode;
     }
 
     char *temp_path = strdup(path);
     if (!temp_path) {
-        return -1;
+        return NULL;
     }
 
     // Tokenize the path
     char *token = strtok(temp_path, "/");
     if (!token) {
         free(temp_path);
-        return -1;
+        return NULL;
     }
-
-    // Start with the root inode
-    struct wfs_inode *curr_inode = find_inode_from_num(0);
     
     // check if root node is inode
     if (!curr_inode) {
         free(temp_path);
-        return -1;
+        return NULL;
     }
 
     // check if curr inode is directory
     if (!(curr_inode->mode & S_IFDIR)) {
         free(temp_path);
-        return -1;
+        return NULL;
     }
-
 
     // Traverse tokens
     while (token) {
@@ -80,6 +79,7 @@ struct wfs_inode *locate_inode (char* path) {
                 continue;
             } 
 
+            struct wfs_sb *superblock = (struct wfs_sb *) mapped_region;
             // first get the mapped region offset, then the block we are on, then the offset within the block
             char* location = (char *) mapped_region + superblock->d_blocks_ptr + (curr_inode->blocks[i] * BLOCK_SIZE);
 
@@ -90,6 +90,9 @@ struct wfs_inode *locate_inode (char* path) {
 
                 if (strcmp(dentry[j].name, token) == 0) {
                     
+                    // this is now the "root"
+                    // do this process again from the while loop with this as root now
+
                     curr_inode = find_inode_from_num(dentry[j].num);
                     found = true;
                     break;
@@ -103,7 +106,7 @@ struct wfs_inode *locate_inode (char* path) {
         if (!found) {
             // Path component not found
             free(temp_path);
-            return -1;
+            return NULL;
         }
         else {
             // Get the next token
@@ -111,9 +114,13 @@ struct wfs_inode *locate_inode (char* path) {
         }
     }
 
-    free(path_copy);
+    free(temp_path);
     return curr_inode;
 }
+
+
+
+
 
 
 
