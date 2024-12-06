@@ -192,6 +192,9 @@ int wfs_mknod() {
 
 int wfs_mkdir(const char *path, mode_t mode) {
 
+    int test10check = open("test10check.txt", O_RDWR|O_CREAT|O_APPEND, 0600);
+    int save_out = dup(fileno(stdout));
+
     printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
     struct wfs_inode *inode_table = (struct wfs_inode *)((char *)mapped_regions[0] + superblock->i_blocks_ptr);
@@ -241,6 +244,10 @@ int wfs_mkdir(const char *path, mode_t mode) {
         return 0;
       }
     }
+
+    fflush(stdout); close(test10check);
+    dup2(save_out, fileno(stdout));
+    close(save_out);
 
     return -ENOSPC;
 
