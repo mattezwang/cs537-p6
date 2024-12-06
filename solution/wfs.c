@@ -9,7 +9,9 @@
 #include <stdbool.h>
 #include "wfs.h"
 
-void *mapped_region;
+void **mapped_regions;
+int *fds;
+
 // struct wfs_sb *superblock;
 
 
@@ -287,20 +289,27 @@ static struct fuse_operations ops = {
 
 int main(int argc, char *argv[]) {
 
-  if (argc < 3) {
-    return -1;
-  }
-
-
-// this was causing segfault lol
-//   for (int i = 0; i < argc; i++) {
-//     printf("  argv[%d]: %s\n", i, argv[i]);
-//   }
+    if (argc < 3) {
+        return -1;
+    }
 
   // Identify disk image arguments
   int num_disks = 0;
   while (num_disks + 1 < argc && argv[num_disks + 1][0] != '-') {
+
+    fds = realloc(fds, (num_disks + 1) * sizeof(int));
+    fds[num_disks] = open(argv[num_disks + 1], O_RDWR);
+
     num_disks++;
+  }
+
+  mapped_regions = malloc(num_disks * sizeof(void *));
+
+  for (int i = 0; i < num_disks; i++) {
+    mapped_regions[i] = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fds[i], 0);
+    if (mapped_regions[i] == MAP_FAILED) {
+        exit(EXIT_FAILURE);
+    }
   }
 
   // Debug: Print disk images
