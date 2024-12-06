@@ -60,7 +60,7 @@ off_t alloc_DB() {
 
     char* a = (char *)mapped_region + temp_mapped_region->d_bitmap_ptr;
     uint32_t b = (uint32_t *)a;
-    size_t c = temp_mapped_region -> num_data_blocks / bits
+    size_t c = temp_mapped_region -> num_data_blocks / bits;
     
     // postive
     if(alloc_block(b, c) >= 0) {
