@@ -124,8 +124,8 @@ struct wfs_inode *locate_inode (char* path) {
 
 
 
-int my_getattr(char *path, struct stat *stbuf) {
-    
+int my_getattr(const char *path, struct stat *stbuf) {
+
     printf("Get attribute starting\n");
     memset(stbuf, 0, sizeof(struct stat));
     printf("Memory set\n");
