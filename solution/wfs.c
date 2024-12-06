@@ -14,36 +14,36 @@ struct wfs_sb *superblock;
 
 int my_getattr() {
     printf("hello\n");
-    return -1;
+    return 0;
 }
 
 int my_mknod() {
-    return -1;
+    return 0;
 }
 
 int my_mkdir() {
     printf("hai\n");
-    return -1;
+    return 0;
 }
 
 int my_unlink() {
-    return -1;
+    return 0;
 }
 
 int my_rmdir() {
-    return -1;
+    return 0;
 }
 
 int my_read() {
-    return -1;
+    return 0;
 }
 
 int my_write() {
-    return -1;
+    return 0;
 }
 
 int my_readdir() {
-    return -1;
+    return 0;
 }
 
 
