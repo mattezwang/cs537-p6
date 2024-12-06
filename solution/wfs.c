@@ -219,12 +219,83 @@ static int wfs_getattr(const char *path, struct stat *stbuf) {
 // mknod: Create a file with the specified mode and device ID
 static int wfs_mknod(const char *path, mode_t mode, dev_t rdev) {
     printf("mknod called for path: %s, mode: %o\n", path, mode);
-    return -ENOSYS; // Operation not implemented
+
+    // Step 1: Find the parent directory inode
+    struct wfs_inode *parent = NULL;
+    char *dir = strdup(path);
+    char *file = strdup(path);
+
+    if (!dir || !file) {
+        free(dir);
+        free(file);
+        return -ENOMEM; // Memory allocation error
+    }
+
+    // Get the parent directory inode
+    if (find_inode_path(dirname(dir), &parent) < 0) {
+        free(dir);
+        free(file);
+        return return_code; // Error code from find_inode_path
+    }
+
+    // Step 2: Allocate a new inode for the file
+    struct wfs_inode *inode = alloc_inode();
+    if (!inode) {
+        free(dir);
+        free(file);
+        return -ENOSPC; // No space left
+    }
+
+    // Initialize the inode with file information
+    inode->mode = S_IFREG | mode;  // Regular file mode
+    inode->uid = getuid();          // Set user ID
+    inode->gid = getgid();          // Set group ID
+    inode->size = 0;                // File size (initially 0)
+    inode->nlinks = 1;              // One link to the file (from parent directory)
+
+    // Step 3: Create a directory entry for the new file in the parent directory
+    struct wfs_dentry *entry = NULL;
+    off_t offset = 0;
+    bool entry_found = false;
+
+    while (offset < parent->size) {
+        entry = (struct wfs_dentry *)find_offset(parent, offset, 0);
+        if (entry != NULL && entry->num == 0) {  // Empty entry found
+            entry->num = inode->num;             // Link inode number to entry
+            strncpy(entry->name, basename(file), MAX_NAME);  // Set file name
+            parent->nlinks++;  // Increment parent directory's link count
+            entry_found = true;
+            break;
+        }
+        offset += sizeof(struct wfs_dentry);
+    }
+
+    // If no empty entry found, allocate new entry at the end of the parent directory
+    if (!entry_found) {
+        entry = (struct wfs_dentry *)find_offset(parent, parent->size, 1);
+        if (!entry) {
+            free_inode(inode);  // Free the inode if no space is found
+            free(dir);
+            free(file);
+            return -ENOSPC;  // No space left
+        }
+        entry->num = inode->num;  // Link inode number to entry
+        strncpy(entry->name, basename(file), MAX_NAME);  // Set file name
+        parent->nlinks++;  // Increment parent directory's link count
+        parent->size += sizeof(struct wfs_dentry);  // Increase parent directory size
+    }
+
+    // Clean up
+    free(dir);
+    free(file);
+
+    return 0;  // Success
 }
+
 
 // mkdir: Create a directory with the specified mode
 static int wfs_mkdir(const char *path, mode_t mode) {
-        struct wfs_inode *parent = NULL;
+    struct wfs_inode *parent = NULL;
     char *dir = strdup(path);
     char *file = strdup(path);
 
