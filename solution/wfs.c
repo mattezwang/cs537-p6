@@ -10,7 +10,94 @@
 #include "wfs.h"
 
 void *mapped_region;
-struct wfs_sb *superblock;
+// struct wfs_sb *superblock;
+
+
+struct wfs_inode *find_inode_from_num (int num) {
+
+    struct wfs_sb *superblock = (struct wfs_sb *) mapped_region;
+    int bits = 32;
+
+    // Access the inode bitmap directly using the offset
+    uint32_t *inode_bitmap = (uint32_t *)((char *) mapped_region + superblock->i_bitmap_ptr);
+
+    int bit_idx = num % bits;
+    int array_idx = num / bits;
+
+    if (!(inode_bitmap[array_idx] & (0x1 << bit_idx))) {
+        return -1;
+    }
+
+    char *inode_table = ((char *) mapped_region) + superblock->i_blocks_ptr;
+    return (struct wfs_inode *)((num * BLOCK_SIZE) + inode_table);
+}
+
+
+
+struct wfs_inode *locate_inode (char* path) {
+
+    if (strcmp(path, "/") == 0) {
+        return 0;
+    }
+
+    char *temp_path = strdup(path);
+    if (!temp_path) {
+        return -1;
+    }
+
+    // Tokenize the path
+    char *token = strtok(temp_path, "/");
+    if (!token) {
+        free(temp_path);
+        return -1;
+    }
+
+    // Start with the root inode
+    struct wfs_inode *curr_inode = find_inode_from_num(0);
+    
+    if (!curr_inode || !(curr_inode->mode & S_IFDIR)) {
+        free(temp_path);
+        return -1;
+    }
+
+
+    // Traverse tokens
+    while (token) {
+        bool found = false;
+
+        // Iterate through directory blocks of the current inode
+        for (int i = 0; i < D_BLOCK; i++) {
+            if (!curr_inode->blocks[i]) continue;
+
+            // Read directory entries from the block
+            struct wfs_dentry *dentry_table = (struct wfs_dentry *)((char *)mapped_region + block_offset(curr_inode->blocks[i]));
+            for (size_t j = 0; j < BLOCK_SIZE / sizeof(struct wfs_dentry); j++) {
+                if (strcmp(dentry_table[j].name, token) == 0) {
+                    // Found the matching entry; move to its inode
+                    curr_inode = get_inode(dentry_table[j].num);
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break; // Exit directory block loop
+        }
+
+        if (!found) {
+            // Path component not found
+            free(temp_path);
+            return NULL;
+        }
+
+        // Get the next token
+        token = strtok(NULL, "/");
+    }
+
+    free(path_copy);
+    return current_inode; // Return the inode of the final token
+}
+
+
+
 
 int my_getattr() {
     printf("hello1\n");
@@ -67,6 +154,7 @@ static struct fuse_operations ops = {
 
 
 int main(int argc, char *argv[]) {
+
   if (argc < 3) {
     return -1;
   }
@@ -79,11 +167,6 @@ int main(int argc, char *argv[]) {
   int num_disks = 0;
   while (num_disks + 1 < argc && argv[num_disks + 1][0] != '-') {
     num_disks++;
-  }
-
-  if (num_disks < 2) {
-    fprintf(stderr, "Error: At least two disk images are required.\n");
-    return -1;
   }
 
   // Debug: Print disk images
