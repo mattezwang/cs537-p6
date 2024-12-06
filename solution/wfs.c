@@ -286,6 +286,7 @@ struct wfs_sb *superblock;
 
 
 int my_getattr() {
+    printf("hello\n");
     return -1;
 }
 
@@ -294,6 +295,7 @@ int my_mknod() {
 }
 
 int my_mkdir() {
+    printf("hai\n");
     return -1;
 }
 
