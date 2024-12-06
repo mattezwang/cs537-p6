@@ -195,11 +195,11 @@ int wfs_mkdir(const char *path, mode_t mode) {
     int test10check = open("test10check.txt", O_RDWR|O_CREAT|O_APPEND, 0600);
     int save_out = dup(fileno(stdout));
 
-    printf("Starting mkdir\n");
+    puts("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
     struct wfs_inode *inode_table = (struct wfs_inode *)((char *)mapped_regions[0] + superblock->i_blocks_ptr);
     size_t num_inodes = superblock->num_inodes;
-    printf("Superblock set, table set, num_inodes set\n");
+    puts("Superblock set, table set, num_inodes set\n");
 
     // Find a free inode
     struct wfs_inode *new_inode = NULL;
@@ -212,7 +212,7 @@ int wfs_mkdir(const char *path, mode_t mode) {
     }
 
     if (!new_inode) {
-      printf("No INODE\n");
+      puts("No INODE\n");
       return -ENOSPC;
     }
 
@@ -229,7 +229,7 @@ int wfs_mkdir(const char *path, mode_t mode) {
     // Find a free directory entry
     struct wfs_inode *parent_inode = locate_inode("/"); // Assuming root for simplicity
     if (!parent_inode) {
-      printf("Root INODE not found");
+      puts("Root INODE not found");
       return -ENOENT;
     }
 
@@ -237,7 +237,7 @@ int wfs_mkdir(const char *path, mode_t mode) {
     for (size_t i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
       printf("dentry: %zd \n", i);
       if (dentry_table[i].num == 0) {
-        printf("Creating new directory");
+        puts("Creating new directory");
         strncpy(dentry_table[i].name, path, MAX_NAME);
         dentry_table[i].num = new_inode - inode_table; // Index of the new inode
         parent_inode->nlinks++;
