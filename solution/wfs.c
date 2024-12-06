@@ -34,7 +34,7 @@ struct wfs_inode *find_inode_from_num (int num) {
 
 
 
-struct wfs_inode *locate_inode (char* path) {
+struct wfs_inode *locate_inode (const char* path) {
 
     // Start with the root inode
     struct wfs_inode *curr_inode = find_inode_from_num(0);
@@ -138,7 +138,7 @@ int my_getattr(const char *path, struct stat *stbuf) {
     }
 
     // Locate the file or directory in the inode table
-    struct wfs_inode *inode = locate_inode(path);
+    struct wfs_inode *inode = locate_inode(const path);
     printf("Found INODE\n");
     if (!inode) {
         printf("No INODE!\n");
