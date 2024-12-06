@@ -18,19 +18,29 @@ struct wfs_inode *find_inode_from_num (int num) {
     printf("find inode from num starting\n");
 
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_region;
+    printf("checkpoint 1\n");
     int bits = 32;
 
     // Access the inode bitmap directly using the offset
     uint32_t *inode_bitmap = (uint32_t *)((char *) mapped_region + superblock->i_bitmap_ptr);
 
+    printf("checkpoint 2\n");
+
     int bit_idx = num % bits;
     int array_idx = num / bits;
 
+    printf("checkpoint 3\n");
+
     if (!(inode_bitmap[array_idx] & (0x1 << bit_idx))) {
+        printf("checkpoint 4\n");
         return NULL;
     }
 
+    printf("checkpoint 5\n");
+
     char *inode_table = ((char *) mapped_region) + superblock->i_blocks_ptr;
+    printf("checkpoint 6\n");
+    printf("find inode from num finished\n");
     return (struct wfs_inode *)((num * BLOCK_SIZE) + inode_table);
 }
 
@@ -97,7 +107,10 @@ struct wfs_inode *locate_inode (const char* path) {
                     // this is now the "root"
                     // do this process again from the while loop with this as root now
 
+                    printf("in locate_inode, just called find_inode_from_num\n");
                     curr_inode = find_inode_from_num(dentry[j].num);
+                    printf("in locate_inode, just finished find_inode_from_num\n");
+
                     found = true;
                     break;
                 }
@@ -117,6 +130,8 @@ struct wfs_inode *locate_inode (const char* path) {
             token = strtok(NULL, "/");
         }
     }
+
+    printf("locate inode finished successfully\n");
 
     free(temp_path);
     return curr_inode;
@@ -142,7 +157,10 @@ int my_getattr(const char *path, struct stat *stbuf) {
     }
 
     // Locate the file or directory in the inode table
+
+    printf("in my_getattr, just called locate_inode\n");
     struct wfs_inode *inode = locate_inode(path);
+    printf("in my_getattr, just finished locate_inode\n");
     printf("Found INODE\n");
     if (!inode) {
         printf("No INODE!\n");
@@ -292,7 +310,7 @@ int main(int argc, char *argv[]) {
 //   }
 
   // Create a new array for FUSE arguments
-  int fuse_argc = argc - num_disks; // Exclude disk images and argv[0]
+  int fuse_argc = argc - num_disks;
   char **fuse_argv = malloc(fuse_argc * sizeof(char *));
   if (!fuse_argv) {
     // perror("Error allocating memory for FUSE arguments");
