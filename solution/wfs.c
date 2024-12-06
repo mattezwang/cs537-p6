@@ -68,6 +68,9 @@ struct wfs_inode *locate_inode (const char* path) {
 
     // Tokenize the path
     char *token = strtok(temp_path, "/");
+
+    printf("this is what the token is in the beginning (trying to see if it's null or something): %s", token);
+
     if (!token) {
         free(temp_path);
         return NULL;
