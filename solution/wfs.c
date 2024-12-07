@@ -984,7 +984,7 @@ char *find_offset(struct wfs_inode *inode, off_t offset, int flag) {
                 return NULL;
             }
         }
-        arr = (off_t *)(disk_images[0] + inode->blocks[IND_BLOCK]);
+        arr = (off_t *)((char *)disk_images[0] + inode->blocks[IND_BLOCK]);
     }
     else {
         arr = inode->blocks;
