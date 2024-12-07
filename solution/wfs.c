@@ -625,7 +625,7 @@ struct wfs_inode *locate_inode(const char *path) {
               break; // Stop searching once the directory entry is found
           }
           else {
-            printf("the difference between the dentry_table[%i].name (%s) and token (%s) is %i \n",
+            printf("the difference between the dentry_table[%li].name (%s) and token (%s) is %i \n",
              i, dentry_table[i].name, token, strcmp(dentry_table[i].name, token));
           }
       }
