@@ -51,20 +51,20 @@ char* get_data_block_addr(int disk_idx, int inode_idx, off_t block_idx) {
 }
 
 int raid_read_block(int disk_idx, int inode_idx, off_t block_idx, char *data, size_t size) {
-    if (superblock->mode == 0) {
+    if (superblock->raid_mode == 0) {
         printf("raid_read_block: reading for mode 0\n");
 
         printf("raid_read_block: TODO\n");
         return FAIL;
     } 
-    else if (superblock->mode == 1) {
+    else if (superblock->raid_mode == 1) {
         printf("raid_read_block: reading for mode 1\n");
 
         memcpy(data, get_data_block_addr(disk_idx, inode_idx, block_idx), size);
 
         printf("raid_read_block: finished\n");
     } 
-    else if (superblock->mode == 2) {
+    else if (superblock->raid_mode == 2) {
         printf("raid_read_block: reading for mode 2\n");
 
         printf("raid_read_block: TODO\n");
@@ -78,13 +78,13 @@ static void* get_disk_block(int block_idx, int disk_idx) {
 }
 
 static int get_raid_disk(int block_idx) {
-    return superblock -> mode == 0 ? block_idx % num_disks : 0;  // RAID 0 or mirrored
+    return superblock -> raid_mode == 0 ? block_idx % num_disks : 0;  // RAID 0 or mirrored
 }
 
 static void* get_block(int block_idx) {
 
     int disk_idx = get_raid_disk(block_idx);
-    int local_block_idx = superblock -> mode == 0 ? block_idx / num_disks : block_idx;
+    int local_block_idx = superblock -> raid_mode == 0 ? block_idx / num_disks : block_idx;
     return get_disk_block(local_block_idx, disk_idx);
 }
 
