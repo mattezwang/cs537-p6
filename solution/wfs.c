@@ -770,6 +770,30 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *)disk_images[0];
     struct wfs_inode *inode_table = (struct wfs_inode *)((char *)disk_images[0] + superblock->i_blocks_ptr);
+
+//     struct wfs_sb {
+//     size_t num_inodes;
+//     size_t num_data_blocks;
+//     off_t i_bitmap_ptr;
+//     off_t d_bitmap_ptr;
+//     off_t i_blocks_ptr;
+//     off_t d_blocks_ptr;
+//     // Extend after this line
+    
+//     int num_disks;
+//     int raid_mode;
+// };
+
+
+    printf("data fields of superblock\n");
+    printf("num inodes is %li\n", superblock->num_inodes);
+    printf("num data blocks is %li\n", superblock->num_data_blocks);
+    printf("i_bitmap_ptr is %li\n", superblock->i_bitmap_ptr);
+    printf("d_bitmap_ptr is %li\n", superblock->d_bitmap_ptr);
+    printf("i_blocks_ptr is %li\n", superblock->i_blocks_ptr);
+    printf("d_blocks_ptr is %li\n", superblock->d_blocks_ptr);
+
+
     size_t num_inodes = superblock->num_inodes;
     printf("Superblock set, table set, num_inodes set\n");
     
