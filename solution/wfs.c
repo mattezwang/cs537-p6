@@ -760,8 +760,8 @@ static int wfs_mknod(const char *path, mode_t mode, dev_t dev) {
 }
 
 static int wfs_mkdir(const char *path, mode_t mode) {
-    struct wfs_inode* check = locate_inode(path);
-    if (!check) return -EEXIST;
+    // struct wfs_inode* check = locate_inode(path);
+    // if (!check) return -EEXIST;
 
     printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *)disk_images[0];
