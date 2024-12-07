@@ -814,15 +814,23 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     if (new_inode_num < 0) return -ENOSPC;
     
     struct wfs_inode new_dir = {0};
+    printf("checkpoint in mkdir 1\n");
     new_dir.num = new_inode_num;
+    printf("checkpoint in mkdir 2\n");
     new_dir.mode = S_IFDIR | (mode & 0777);
+    printf("checkpoint in mkdir 3\n");
     new_dir.uid = getuid();
+    printf("checkpoint in mkdir 4\n");
     new_dir.gid = getgid();
+    printf("checkpoint in mkdir 5\n");
     new_dir.nlinks = 2;
     new_dir.atim = new_dir.mtim = new_dir.ctim = time(NULL);
+    printf("checkpoint in mkdir 6\n");
     
     struct wfs_inode parent = {0};
+    printf("checkpoint in mkdir 7\n");
     memcpy(&parent, parent_inode_num, sizeof(struct wfs_inode));
+    printf("checkpoint in mkdir 8\n");
     
     if (parent.blocks[0] == 0 && parent.size == 0) {
         int block_num = allocate_DB();
