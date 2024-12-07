@@ -842,8 +842,13 @@ static int wfs_mkdir(const char *path, mode_t mode) {
         // }
         parent.blocks[0] = block_num;
         
+
+
         char zero_block[BLOCK_SIZE] = {0};
+
+        printf("before this for loop in mkdir\n");
         for (int disk = 0; disk < num_disks; disk++) {
+            printf("iteration %i in this for loop in in mkdir\n", disk);
             memcpy((char*)disk_images[disk] + superblock->d_blocks_ptr + block_num * BLOCK_SIZE,
                    zero_block, BLOCK_SIZE);
         }
