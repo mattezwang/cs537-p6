@@ -591,7 +591,7 @@ printf("Size of base type: %zu\n", sizeof(superblock->d_blocks_ptr));
 
     printf("BLOCK_SIZE is %i", BLOCK_SIZE);
 
-  return superblock->d_blocks_ptr + num;
+  return num;
 }
 
 struct wfs_inode *allocate_inode() {
