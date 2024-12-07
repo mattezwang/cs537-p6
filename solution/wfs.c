@@ -578,7 +578,7 @@ off_t allocate_DB() {
     return -1;
   }
 
-    printf("in allocate_DB, this is what is getting returned: %p", superblock->d_blocks_ptr + num);
+    printf("in allocate_DB, this is what is getting returned: %ld", superblock->d_blocks_ptr + num);
 
   return superblock->d_blocks_ptr + num;
 }
