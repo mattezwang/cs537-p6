@@ -229,25 +229,6 @@ struct wfs_inode *allocate_inode() {
 
 
 int wfs_mknod(const char *path, mode_t mode) {
-
-    char *temp_path = strdup(path);
-    struct wfs_inode *parent;
-
-    if(!temp_path) {
-
-        free(temp_path);
-        return -ENOMEM;
-    }
-
-    struct wfs_inode *inode = allocate_inode();
-    if (inode == NULL) {
-        free(dir);
-        free(file);
-        return -ENOSPC;  
-
-
-    }
-
     printf("hello2\n");
     return 0;
 }
