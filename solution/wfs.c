@@ -852,10 +852,10 @@ static int wfs_mkdir(const char *path, mode_t mode) {
         for (int disk = 0; disk < num_disks; disk++) {
             printf("iteration %i in this for loop in in mkdir\n", disk);
 
-            if (disk_images[i] == NULL) {
-                printf("disk_images[%d] is NULL\n", i);
+            if (disk_images[disk] == NULL) {
+                printf("disk_images[%d] is NULL\n", disk);
             } else {
-                printf("disk_images[%d] is valid, address: %p\n", i, disk_images[i]);
+                printf("disk_images[%d] is valid, address: %p\n", disk, disk_images[disk]);
             }
 
             memcpy((char*)disk_images[disk] + superblock->d_blocks_ptr + block_num * BLOCK_SIZE,
