@@ -768,7 +768,7 @@ static int wfs_mkdir(const char *path, mode_t mode) {
 
 
     printf("Starting mkdir\n");
-    struct wfs_sb *superblock = (struct wfs_sb *)disk_images[0];
+    struct wfs_sb **superblock = (struct wfs_sb *)disk_images[0];
     struct wfs_inode *inode_table = (struct wfs_inode *)((char *)disk_images[0] + superblock->i_blocks_ptr);
     size_t num_inodes = superblock->num_inodes;
     printf("Superblock set, table set, num_inodes set\n");
@@ -843,7 +843,6 @@ static int wfs_mkdir(const char *path, mode_t mode) {
         parent.blocks[0] = block_num;
         
 
-
         char zero_block[BLOCK_SIZE] = {0};
 
         // printf("disk_images[0] = %")
@@ -857,6 +856,8 @@ static int wfs_mkdir(const char *path, mode_t mode) {
             } else {
                 printf("disk_images[%d] is valid, address: %p\n", disk, disk_images[disk]);
             }
+
+            printf("disk_images[disk] is %p\n", disk_images[disk]);
 
             memcpy((char*)disk_images[disk] + superblock->d_blocks_ptr + block_num * BLOCK_SIZE,
                    zero_block, BLOCK_SIZE);
@@ -963,6 +964,8 @@ int main(int argc, char *argv[]) {
       return -1;
     }
     //diskSize = st.st_size;
+
+    printf("num_disks is %i\n", num_disks);
 
     disk_images[i] = mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescs[i], 0);
     if (disk_images[i] == MAP_FAILED) {
