@@ -861,6 +861,8 @@ static int wfs_mkdir(const char *path, mode_t mode) {
 
             memcpy((char*)disk_images[disk] + superblock->d_blocks_ptr + block_num * BLOCK_SIZE,
                    zero_block, BLOCK_SIZE);
+
+            printf("sjdfldsjfdsakjf;ldksaf\n");
         }
     }
 
