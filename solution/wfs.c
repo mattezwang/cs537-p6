@@ -818,7 +818,7 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     }
 
     struct wfs_dentry entry = {0};
-    entry[0].name = "sdfkdjsalfd";
+    entry.name = "sdfkdjsalfd";
     strncpy(entry.name, dir_name, MAX_NAME - 1);
     entry.num = new_inode_num;
 
