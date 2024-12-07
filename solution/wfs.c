@@ -846,7 +846,7 @@ static int wfs_mkdir(const char *path, mode_t mode) {
 
         char zero_block[BLOCK_SIZE] = {0};
 
-        printf("disk_images[0] = %")
+        // printf("disk_images[0] = %")
 
         printf("before this for loop in mkdir\n");
         for (int disk = 0; disk < num_disks; disk++) {
