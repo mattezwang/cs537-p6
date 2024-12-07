@@ -898,6 +898,11 @@ static int wfs_mkdir(const char *path, mode_t mode) {
 
             printf("disk_images[disk] is %p\n", disk_images[disk]);
 
+            printf("block_num: %i\n", block_num);
+            printf("BLOCK_SIZE: %i\n", BLOCK_SIZE);
+            printf("to %p", (char*)disk_images[disk] + superblock->d_blocks_ptr + block_num * BLOCK_SIZE);
+            printf("from %p", zero_block);
+
             memcpy((char*)disk_images[disk] + superblock->d_blocks_ptr + block_num * BLOCK_SIZE,
                    zero_block, BLOCK_SIZE);
 
