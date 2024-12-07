@@ -586,7 +586,7 @@ printf("Size of base type: %zu\n", sizeof(superblock->d_blocks_ptr));
     printf("in allocate_DB, this is what is getting returned WITH BLOCK SIZE: %ld", base_address + num * BLOCK_SIZE);
 
     printf("superblock -> d_blocks_ptr without num is %ld\n",  superblock->d_blocks_ptr);
-    printf("num %li", num);
+    // printf("num %li", num)
 
 
     printf("BLOCK_SIZE is %i", BLOCK_SIZE);
@@ -974,8 +974,55 @@ static int wfs_write(const char *path, const char *buf, size_t size, off_t offse
   return size;
 }
 
+char *find_offset(struct wfs_inode *inode, off_t offset, int flag) {
+    int index = offset / BLOCK_SIZE;
+    off_t *arr;
+    if (index > D_BLOCK) {
+        index = index - IND_BLOCK;
+        if (inode->blocks[IND_BLOCK] == 0) {
+            if ((inode->blocks[IND_BLOCK] = allocate_DB()) < 0) {
+                return NULL;
+            }
+        }
+        arr = (off_t *)(disk_images[0] + inode->blocks[IND_BLOCK]);
+    }
+    else {
+        arr = inode->blocks;
+    }
+    if (*(arr + index) == 0 && flag) {   
+        off_t block = allocate_DB();
+        if(block < 0 || (*(arr + index) = block) == 0) {
+            err = -ENOSPC;
+            return NULL;
+        }
+    }
+    return ((char*)disk_images[0] + (char *)(*(arr + index))) + (offset % BLOCK_SIZE);
+}
+
 static int wfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
-  printf("readdir called for path: %s\n", path);
+  (void)fi;
+  (void)offset;
+  filler(buf, ".", NULL, 0);
+  filler(buf, "..", NULL, 0);
+  char *search = strdup(path);
+  if (!locate_inode(search)) {
+    free(search);
+    return err;
+  }
+  struct wfs_inode *inode = locate_inode(search);
+  size_t size = inode->size;
+  struct wfs_dentry *entry;
+  off_t offset_temp = 0;
+  while (offset_temp < size) {
+    entry = (struct wfs_dentry *)find_offset(inode, offset_temp, 0);
+    if (entry != NULL) {
+      if (entry->num != 0) {
+        filler(buf, entry->name, NULL, 0);
+      }
+    }
+    offset_temp = offset_temp + sizeof(struct wfs_dentry);
+  }
+  free(search);
   return 0;
 }
 
