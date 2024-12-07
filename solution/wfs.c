@@ -228,7 +228,8 @@ struct wfs_inode *allocate_inode() {
 
 
 
-int wfs_mknod(const char *path, mode_t mode) {
+int wfs_mknod(const char *path, mode_t mode, dev_t dev) {
+    (void)dev;
     printf("hello2\n");
     return 0;
 }
