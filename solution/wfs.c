@@ -579,8 +579,14 @@ off_t allocate_DB() {
     return -1;
   }
 
-    printf("in allocate_DB, this is what is getting returned: %ld", superblock->d_blocks_ptr + num);
-    printf("in allocate_DB, this is what is getting returned WITH BLOCK SIZE : %ld", superblock->d_blocks_ptr + num * BLOCK_SIZE);
+    printf("in allocate_DB, this is what is getting returned: %ld\n", superblock->d_blocks_ptr + num);
+    printf("in allocate_DB, this is what is getting returned WITH BLOCK SIZE : %ld\n", superblock->d_blocks_ptr + (num * BLOCK_SIZE));
+    long base_address = (long)superblock->d_blocks_ptr;
+    printf("Size of base type: %zu\n", sizeof(*superblock->d_blocks_ptr));
+    printf("in allocate_DB, this is what is getting returned WITH BLOCK SIZE: %ld", base_address + num * BLOCK_SIZE);
+
+
+    printf("BLOCK_SIZE is %i", BLOCK_SIZE);
 
 
   return superblock->d_blocks_ptr + num ;
