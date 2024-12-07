@@ -592,6 +592,9 @@ struct wfs_inode *allocate_inode() {
 }
 
 struct wfs_inode *locate_inode(const char *path) {
+
+    printf("locate_inode starting\n");
+
   if (strcmp("/", path) == 0) {
     printf("Found root path\n");
     struct wfs_sb *superblock = (struct wfs_sb *)disk_images[0];
@@ -620,6 +623,10 @@ struct wfs_inode *locate_inode(const char *path) {
               current_inode = &inode_table[dentry_table[i].num];
               found = 1;
               break; // Stop searching once the directory entry is found
+          }
+          else {
+            printf("the difference between the dentry_table[%i].name (%s) and token (%s) is %i \n",
+             i, dentry_table[i].name, token, strcmp(dentry_table[i].name, token));
           }
       }
 
@@ -681,11 +688,11 @@ static int wfs_getattr(const char *path, struct stat *stbuf) {
 
   // Locate the file or directory in the inode table
   struct wfs_inode *inode = locate_inode(path);
-  printf("Found INODE\n");
   if (!inode) {
     printf("No INODE!\n");
     return -ENOENT;
   }
+  else printf("FOUND INODE!\n");
 
   // Populate stat structure
   stbuf->st_mode = inode->mode;
