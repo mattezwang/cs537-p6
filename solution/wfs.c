@@ -833,7 +833,9 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     printf("checkpoint in mkdir 8\n");
     
     if (parent.blocks[0] == 0 && parent.size == 0) {
+        printf("just before allocate_db in mkdir\n");
         int block_num = allocate_DB();
+        printf("just after allocate_db in mkdir\n");
         // if (block_num < 0) {
         //     free_inode(new_inode_num);
         //     return -ENOSPC;
@@ -846,6 +848,8 @@ static int wfs_mkdir(const char *path, mode_t mode) {
                    zero_block, BLOCK_SIZE);
         }
     }
+
+    printf("after if statement in mkdir\n");
 
     struct wfs_dentry entry = {0};
     //   = "sdfkdjsalfd";
