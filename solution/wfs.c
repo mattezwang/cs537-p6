@@ -760,8 +760,12 @@ static int wfs_mknod(const char *path, mode_t mode, dev_t dev) {
 }
 
 static int wfs_mkdir(const char *path, mode_t mode) {
+
+
+    // NOTICE: take this out
     // struct wfs_inode* check = locate_inode(path);
     // if (!check) return -EEXIST;
+
 
     printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *)disk_images[0];
@@ -781,16 +785,27 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     printf("the parent path is %s\n", parent_path);
     
     struct wfs_inode* parent_inode_num = locate_inode(parent_path);
-    if (!parent_inode_num) return -ENOENT; // Parent directory not found
+    if (!parent_inode_num) {
+        printf("we are in here sadklfja;lf");
+        return -ENOENT; // Parent directory not found
+    }
 
     int new_inode_num;
     for (size_t i = 0; i < num_inodes; i++) {
       printf("inode: %zd \n", i);
-      if (inode_table[i].nlinks == 0) {
-        new_inode_num = i;
-        break;
-      }
+
+      // NOTICE: PRETTY SURE THIS CAUSES A SEGFAULT, HARDCODING IT TO TEST IT OUT
+    //   if (inode_table[i].nlinks == 0) {
+    //     new_inode_num = i;
+    //     break;
+    //   }
+
+         if (inode_table[i].nlinks == 0) {
+            new_inode_num = 20;
+            break;
+        }
     }
+
     // int new_inode_num = get_free_inode();
     if (new_inode_num < 0) return -ENOSPC;
     
