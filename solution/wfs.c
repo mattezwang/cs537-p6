@@ -48,6 +48,81 @@ struct wfs_inode *find_inode_from_num (int num) {
 }
 
 
+off_t allocate_data_block() {
+    struct wfs_sb *temp = (struct wfs_sb *) mapped_regions[0];
+
+    // Manually resolve `mmap_ptr` for `d_bitmap_ptr`
+    uint32_t *bitmap = (uint32_t *)((char *)mapped_regions[0] + temp->d_bitmap_ptr);
+    size_t size = temp->num_data_blocks / 32;
+
+    // Start of `allocate_block` logic
+    off_t num = -1; // Default to -1 if no block is found
+    for (uint32_t i = 0; i < size; i++) {
+        uint32_t bitmap_region = bitmap[i];
+        uint32_t k = 0;
+        while (bitmap_region != UINT32_MAX && k < 32) {
+            if (!((bitmap_region >> k) & 0x1)) {
+                bitmap[i] = bitmap[i] | (0x1 << k); // Mark the block as allocated
+                num = i * 32 + k;                  // Calculate block number
+                break;
+            }
+            k++;
+        }
+        if (num >= 0) {
+            break; // Exit loop once a free block is found
+        }
+    }
+    // End of `allocate_block` logic
+
+    if (num < 0) {
+        rc = -ENOSPC;
+        return -1;
+    }
+
+    // Manually resolve `mmap_ptr` for `d_blocks_ptr` and return offset
+    return temp->d_blocks_ptr + BLOCK_SIZE * num;
+}
+
+
+struct wfs_inode *allocate_inode() {
+    struct wfs_sb *temp = (struct wfs_sb *) mapped_regions[0];
+
+    // Manually resolve `mmap_ptr` for `i_bitmap_ptr`
+    uint32_t *bitmap = (uint32_t *)((char *) mapped_regions[0] + temp->i_bitmap_ptr);
+    size_t size = temp->num_inodes / 32;
+
+    // Start of `allocate_block` logic
+    off_t num = -1; // Default to -1 if no block is found
+    for (uint32_t i = 0; i < size; i++) {
+        uint32_t bitmap_region = bitmap[i];
+        uint32_t k = 0;
+        while (bitmap_region != UINT32_MAX && k < 32) {
+            if (!((bitmap_region >> k) & 0x1)) {
+                bitmap[i] = bitmap[i] | (0x1 << k); // Mark the block as allocated
+                num = i * 32 + k;                  // Calculate block number
+                break;
+            }
+            k++;
+        }
+        if (num >= 0) {
+            break; // Exit loop once a free block is found
+        }
+    }
+    // End of `allocate_block` logic
+
+    if (num < 0) {
+        rc = -ENOSPC; // No space left
+        return NULL;
+    }
+
+    // Manually resolve `mmap_ptr` for `i_blocks_ptr` and allocate inode
+    struct wfs_inode *inode = (struct wfs_inode *)((char *) mapped_regions[0] + temp->i_blocks_ptr + num * BLOCK_SIZE);
+    inode->num = num; // Set the inode number
+    return inode;
+}
+
+
+
 
 struct wfs_inode *locate_inode (const char* path) {
 
