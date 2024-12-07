@@ -577,7 +577,7 @@ off_t allocate_DB() {
   if (num < 0) {
     return -1;
   }
-  return superblock->d_blocks_ptr + BLOCK_SIZE * num;
+  return superblock->d_blocks_ptr + num;
 }
 
 struct wfs_inode *allocate_inode() {
