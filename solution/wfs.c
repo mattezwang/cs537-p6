@@ -575,12 +575,15 @@ off_t allocate_DB() {
   struct wfs_sb *superblock = (struct wfs_sb *)disk_images[0];
   off_t num = allocate_block((uint32_t *)((char *)disk_images[0] + superblock->d_bitmap_ptr), superblock->num_data_blocks / 32);
   if (num < 0) {
+    printf("something is wrong here");
     return -1;
   }
 
     printf("in allocate_DB, this is what is getting returned: %ld", superblock->d_blocks_ptr + num);
+    printf("in allocate_DB, this is what is getting returned WITH BLOCK SIZE : %ld", superblock->d_blocks_ptr + num * BLOCK_SIZE);
 
-  return superblock->d_blocks_ptr + num;
+
+  return superblock->d_blocks_ptr + num ;
 }
 
 struct wfs_inode *allocate_inode() {
