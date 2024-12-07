@@ -152,11 +152,6 @@ struct wfs_inode *locate_inode (const char* path) {
 }
 
 
-
-
-
-
-
 int wfs_getattr(const char *path, struct stat *stbuf) {
 
     printf("Get attribute starting\n");
@@ -197,7 +192,61 @@ int wfs_getattr(const char *path, struct stat *stbuf) {
     return 0;
 }
 
-int wfs_mknod() {
+
+struct wfs_inode *allocate_inode() {
+    struct wfs_sb *temp = (struct wfs_sb *) mapped_regions[0];
+    uint32_t *bitmap = (uint32_t *)((char * ) mapped_regions[0] + temp->i_bitmap_ptr); // Use mmap_ptr logic inline
+    size_t size = temp->num_inodes / 32;
+
+    // Iterate through the bitmap to find and allocate a block
+    for (uint32_t i = 0; i < size; i++) {
+        uint32_t bitmap_region = bitmap[i];
+        uint32_t k = 0;
+        while (bitmap_region != UINT32_MAX && k < 32) {
+            if (!((bitmap_region >> k) & 0x1)) {
+                // Mark the block as allocated in the bitmap
+                bitmap[i] = bitmap[i] | (0x1 << k);
+
+                // Calculate the allocated block number
+                off_t num = i * 32 + k;
+
+                // Create and initialize the inode structure
+                struct wfs_inode *inode = (struct wfs_inode *)((char *) mapped_regions[0] + temp->i_blocks_ptr + num * BLOCK_SIZE); // Use mmap_ptr logic inline
+                inode->num = num;
+                return inode;
+            }
+            k++;
+        }
+    }
+
+    // If no free block is found, return an error
+    err = -ENOSPC;
+    return NULL;
+}
+
+
+
+
+int wfs_mknod(const char *path, mode_t mode,) {
+
+    char *temp_path = strdup(path);
+    struct wfs_inode *parent;
+
+    if(!temp_path) {
+
+        free(temp_path);
+        return -ENOMEM;
+    }
+
+    struct wfs_inode *inode = allocate_inode();
+    if (inode == NULL) {
+        free(dir);
+        free(file);
+        return -ENOSPC;  
+
+
+    }
+
     printf("hello2\n");
     return 0;
 }
