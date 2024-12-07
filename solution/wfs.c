@@ -11,6 +11,7 @@
 
 void **mapped_regions;
 int *fds;
+int rc;
 
 // struct wfs_sb *superblock;
 
@@ -220,14 +221,14 @@ struct wfs_inode *allocate_inode() {
     }
 
     // If no free block is found, return an error
-    err = -ENOSPC;
+    rc = -ENOSPC;
     return NULL;
 }
 
 
 
 
-int wfs_mknod(const char *path, mode_t mode,) {
+int wfs_mknod(const char *path, mode_t mode) {
 
     char *temp_path = strdup(path);
     struct wfs_inode *parent;
