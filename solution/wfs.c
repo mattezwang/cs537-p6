@@ -585,11 +585,12 @@ off_t allocate_DB() {
 printf("Size of base type: %zu\n", sizeof(superblock->d_blocks_ptr));
     printf("in allocate_DB, this is what is getting returned WITH BLOCK SIZE: %ld", base_address + num * BLOCK_SIZE);
 
+    printf("superblock -> d_blocks_ptr without num is %ld\n",  superblock->d_blocks_ptr);
+
 
     printf("BLOCK_SIZE is %i", BLOCK_SIZE);
 
-
-  return superblock->d_blocks_ptr + num ;
+  return superblock->d_blocks_ptr + num;
 }
 
 struct wfs_inode *allocate_inode() {
