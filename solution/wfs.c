@@ -775,7 +775,10 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     path_copy[MAX_NAME-1] = dir_copy[MAX_NAME-1] = '\0';
     
     char *dir_name = basename(dir_copy);
+    printf("the dir name is %s\n", dir_name);
+
     char *parent_path = dirname(path_copy);
+    printf("the parent path is %s\n", parent_path);
     
     struct wfs_inode* parent_inode_num = locate_inode(parent_path);
     if (!parent_inode_num) return -ENOENT; // Parent directory not found
@@ -818,7 +821,7 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     }
 
     struct wfs_dentry entry = {0};
-    entry.name = "sdfkdjsalfd";
+    //   = "sdfkdjsalfd";
     strncpy(entry.name, dir_name, MAX_NAME - 1);
     entry.num = new_inode_num;
 
