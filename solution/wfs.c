@@ -618,6 +618,9 @@ struct wfs_inode *locate_inode(const char *path) {
       int found = 0;
       struct wfs_dentry *dentry_table = (struct wfs_dentry *)((char *)disk_images[0] + current_inode->blocks[0]);
 
+
+        // the THING IS NEVER FOUND FOR SOME REASON
+
       for (size_t i = 0; i < BLOCK_SIZE / sizeof(struct wfs_dentry); i++) {
           if (dentry_table[i].num > 0 && strcmp(dentry_table[i].name, token) == 0) {
               current_inode = &inode_table[dentry_table[i].num];
@@ -815,6 +818,7 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     }
 
     struct wfs_dentry entry = {0};
+    entry[0].name = "sdfkdjsalfd";
     strncpy(entry.name, dir_name, MAX_NAME - 1);
     entry.num = new_inode_num;
 
