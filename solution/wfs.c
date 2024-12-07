@@ -800,11 +800,15 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     //     break;
     //   }
 
+        printf("checkpoint in mkdir %li\n", i);
+
          if (inode_table[i].nlinks == 0) {
             new_inode_num = 20;
             break;
         }
     }
+
+    printf("checkpoint in mkdir abc\n");
 
     // int new_inode_num = get_free_inode();
     if (new_inode_num < 0) return -ENOSPC;
