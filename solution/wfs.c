@@ -363,7 +363,7 @@ int wfs_mkdir(const char *path, mode_t mode) {
     printf("Starting mkdir\n");
     struct wfs_sb *superblock = (struct wfs_sb *) mapped_regions[0];
     struct wfs_inode *inode_table = (struct wfs_inode *)((char *)mapped_regions[0] + superblock->i_blocks_ptr);
-    size_t num_inodes = superblock->num_inodes;
+    // size_t num_inodes = superblock->num_inodes;
     printf("Superblock set, table set, num_inodes set\n");
 
     // Find a free inode
