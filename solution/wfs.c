@@ -337,41 +337,55 @@ int set_new_inode(mode_t mode, struct wfs_inode *new_inode, int new_inode_index)
 
 
 int wfs_mkdir_helper_raid_mode(mode_t mode, int new_inode_index, char *disk, const char *parent_path) {
-    struct wfs_sb *superblock = (struct wfs_sb *)disk_maps[0];
+    struct wfs_sb *superblock = (struct wfs_sb *) disk_maps[0];
+    char *inode_table;
+    struct wfs_inode *inode;
 
-    switch (superblock->raid_mode) {
-        case 0: {  // RAID 0: Striping
+    switch (superblock -> raid_mode) {
+        case 0: {
+
             for (int i = 0; i < num_disks; i++) {
-                char *inode_table = ((char *)disk_maps[i] + superblock->i_blocks_ptr);
-                struct wfs_inode *new_inode = (struct wfs_inode *)(inode_table + (new_inode_index * BLOCK_SIZE));
-                printf("Allocating inode at index: %d, disk: %d (RAID 0)\n", new_inode_index, i);
 
-                if (set_new_inode(mode, new_inode, new_inode_index) != 0) {
-                    return -1;  // Error setting up inode
+                inode_table = ((char *) disk_maps[i] + superblock -> i_blocks_ptr);
+                inode = (struct wfs_inode *)((new_inode_index * BLOCK_SIZE) + inode_table);
+
+                if (set_new_inode(mode, inode, new_inode_index) != 0) {
+                    return -1;
+                }
+                else {
+                    // printf("this successfully worked in wfs_mkdir_helper_raid_mode case 0 sdfasf\n");
+                    continue;
                 }
             }
+
             break;
         }
 
-        case 1: {  // RAID 1: Mirroring
-            char *inode_table = (disk + superblock->i_blocks_ptr);
-            struct wfs_inode *new_inode = (struct wfs_inode *)(inode_table + (new_inode_index * BLOCK_SIZE));
-            printf("Allocating inode at index: %d (RAID 1)\n", new_inode_index);
+        case 1: {
+            inode_table = (disk + superblock->i_blocks_ptr);
+            inode = (struct wfs_inode *)(inode_table + (new_inode_index * BLOCK_SIZE));
 
-            if (set_new_inode(mode, new_inode, new_inode_index) != 0) {
-                return -1;  // Error setting up inode
+            if (set_new_inode(mode, inode, new_inode_index) != 0) {
+                return -1;
             }
-            break;
+
+            else {
+                // printf("this successfully worked in wfs_mkdir_helper_raid_mode case 1 sdafmsa\n");
+                break;
+            }
         }
 
         default: {
-            fprintf(stderr, "Unsupported RAID mode: %d\n", superblock->raid_mode);
-            return -EINVAL;  // Invalid argument error
+
+            printf("should never reach here, needs to be either raid mode 0 or 1\n");
+            return -EINVAL;
         }
     }
 
-    return 0;  // Success
+    // everything worked
+    return 0;
 }
+
 
 
 
