@@ -13,7 +13,8 @@
 #include "fuse.h"
 #include "errno.h"
 #include "wfs.h"
-#include "stdbool.h"
+#include "stdbool.h" 
+
 
 #define MAX_PATH_NAME 264
 #define MAX_DISKS 16
