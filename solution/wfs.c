@@ -362,6 +362,8 @@ static int wfs_getattr(const char *path, struct stat *stbuf) {
     return SUCCESS;
 }
 
+
+
 static int wfs_mknod(const char *path, mode_t mode, dev_t dev) {
     printf("Entering wfs_mknod\n");
     printf("Inode mode: %o\n", mode);
@@ -407,6 +409,42 @@ static int wfs_mknod(const char *path, mode_t mode, dev_t dev) {
     return SUCCESS;
 }
 
+
+void list_directories() {
+
+    const char *path = "mnt";
+    struct dirent *entry;
+    DIR *dir = opendir(path);
+
+    if (!dir) {
+        perror("opendir");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Directories inside: %s\n", path);
+
+    for(int i=0; i<2; i++) {
+
+        entry = readdir(dir);
+        if(entry == NULL) {
+            continue;
+        }
+        // Construct the full path to check if it's a directory
+        char full_path[1024];
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+
+        struct stat entry_stat;
+        if (stat(full_path, &entry_stat) == 0 && S_ISDIR(entry_stat.st_mode)) {
+            // Skip "." and ".."
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                printf("%s\n", entry->d_name);
+            }
+        }
+    }
+
+    closedir(dir);
+}
+
 static int wfs_mkdir(const char *path, mode_t mode) {
     printf("Entering wfs_mkdir\n");
     printf("wfs_mkdir: path = %s\n", path);
@@ -440,11 +478,17 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     inode.atim = inode.mtim = inode.ctim = time(NULL);
     inode.size = 0;
 
-
+    printf("before write_inode_across_disks\n");
+    list_directories();
     write_inode_across_disks(inodeIndex, &inode);
+
+    printf("after write_inode_across_disks\n");
+    list_directories();
 
     // Add the new directory to its parent's directory entries
     int result = add_parent_dir_entry(parentInode, childPath, inodeIndex);
+    printf("after add_parent_dir_entry\n");
+    list_directories();
 
 
     if (result < 0) {
