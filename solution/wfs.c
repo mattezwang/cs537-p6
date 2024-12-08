@@ -453,7 +453,12 @@ void list_directories() {
 
     printf("Directories inside: %s\n", path);
 
-    while ((entry = readdir(dir)) != NULL) {
+    for(int i=0; i<2; i++) {
+
+        entry = readdir(dir);
+        if(entry == NULL) {
+            continue;
+        }
         // Construct the full path to check if it's a directory
         char full_path[1024];
         snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
