@@ -1094,7 +1094,7 @@ static int wfs_write(const char *path, const char *buf, size_t size, off_t offse
             if(!check1) {
                 to_write = block_available_space;
             } else if (check1) {
-                to_write = size - bytes_written
+                to_write = size - bytes_written;
             }
 
             wfs_write_helper5(disk_index, indirect_offset, block_start_offset, buf, bytes_written, to_write, indirect_block);
