@@ -400,12 +400,53 @@ static int wfs_mknod(const char *path, mode_t mode, dev_t dev) {
     {
         printf("wfs_mknod: BAD FIRST BLOCK\n");
     }
+
+    printf("before write_inode\n");
+    list_directories();
     write_inode(child_idx, &inode);
 
+    printf("after write_inode, before add_parent_dir_entry\n");
+    list_directories();
+
     add_parent_dir_entry(parentInode, childPath, child_idx);
+
+    printf("after add_parent_dir_entry\n");
+    list_directories();
     printf("Returning from mknod\n");
     return SUCCESS;
 }
+
+
+void list_directories() {
+
+    const char *path = "mnt";
+    struct dirent *entry;
+    DIR *dir = opendir(path);
+
+    if (!dir) {
+        perror("opendir");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Directories inside: %s\n", path);
+
+    while ((entry = readdir(dir)) != NULL) {
+        // Construct the full path to check if it's a directory
+        char full_path[1024];
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+
+        struct stat entry_stat;
+        if (stat(full_path, &entry_stat) == 0 && S_ISDIR(entry_stat.st_mode)) {
+            // Skip "." and ".."
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                printf("%s\n", entry->d_name);
+            }
+        }
+    }
+
+    closedir(dir);
+}
+
 
 static int wfs_mkdir(const char *path, mode_t mode) {
     printf("Entering wfs_mkdir\n");
@@ -439,25 +480,8 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     inode.gid = getgid();
     inode.atim = inode.mtim = inode.ctim = time(NULL);
     inode.size = 0;
-    //inode.blocks[0] = firstBlock;
 
-    //struct wfs_inode* p = get_inode(parentInode);
-
-
-
-    // char zeroBlock[BLOCK_SIZE] = {0};
-    // for (int i = 0; i < superblock->num_disks; i++) {
-    //     memcpy((char*)disks[i] + superblock->d_blocks_ptr + firstBlock * BLOCK_SIZE, 
-    //            zeroBlock, BLOCK_SIZE);
-    // }
-
-    // Write inode across all disks
     write_inode_across_disks(inodeIndex, &inode);
-
-    // for (int i = 0; i < superblock->num_disks; i++) {
-    //     memcpy((char*)disks[i] + superblock->i_blocks_ptr + inodeIndex * BLOCK_SIZE,
-    //            &inode, sizeof(struct wfs_inode));
-    // }
 
     // Add the new directory to its parent's directory entries
     int result = add_parent_dir_entry(parentInode, childPath, inodeIndex);
@@ -466,101 +490,6 @@ static int wfs_mkdir(const char *path, mode_t mode) {
         return result;
     }
 
-    // if(p.blocks[0] == 0 && p.size == 0){
-    //     int blockIndex = allocate_data_block();
-    //     printf("Allocated block: %i\n", blockIndex);
-    //     if(blockIndex < 0){
-    //         return -ENOSPC;
-    //     }
-
-    //     p.blocks[0] = blockIndex;
-
-    //     char zBlock[BLOCK_SIZE] = {0};
-    //     for(int i = 0; i < superblock -> num_disks; i++){
-    //         memcpy((char*) disks[i] + superblock->d_blocks_ptr + blockIndex * BLOCK_SIZE, zBlock, BLOCK_SIZE);
-    //     }
-    // }
-
-    /*struct wfs_dentry entry = {0};
-    strncpy(entry.name, childPath, MAX_NAME-1);
-    entry.num = inodeIndex;
-
-    int found_block = -1;
-    for (int i = 0; i < N_BLOCKS; i++) {
-        if (p->blocks[i] == 0 && p->size == 0) {
-            // Allocate a new block for the parent's directory entries if needed
-            int blockIndex = allocate_data_block();
-            if (blockIndex < 0) {
-                return -ENOSPC;
-            }
-            //p->blocks[i] = blockIndex;
-            //found_block = i;
-            //break;
-            for (int disk = 0; disk < superblock->num_disks; disk++) {
-                struct wfs_inode *diskParentInodePtr = (struct wfs_inode*)((char*)disks[disk] + superblock->i_blocks_ptr + parentInode * BLOCK_SIZE);
-                diskParentInodePtr->blocks[i] = blockIndex;
-            }
-            found_block = i;
-        
-            // Zero out the block on ALL disks
-            char zeroBlock[BLOCK_SIZE] = {0};
-            for (int disk = 0; disk < superblock->num_disks; disk++) {
-                memcpy((char*)disks[disk] + superblock->d_blocks_ptr + blockIndex * BLOCK_SIZE, 
-                       zeroBlock, BLOCK_SIZE);
-            }
-            
-            break;
-        }
-    }
-
-    if (found_block >= 0) {
-        // Add directory entry to ALL disks identically
-        for (int disk = 0; disk < superblock->num_disks; disk++) {
-            struct wfs_dentry *entries = (struct wfs_dentry*)(
-                disks[disk] + superblock->d_blocks_ptr + 
-                p->blocks[found_block] * BLOCK_SIZE
-            );
-
-            // Find first empty entry
-            for (int j = 0; j < BLOCK_SIZE / sizeof(struct wfs_dentry); j++) {
-                if (entries[j].num == 0) {
-                    memcpy(&entries[j], &entry, sizeof(struct wfs_dentry));
-                    break;
-                }
-            }
-        }
-
-        // Update parent inode size and nlinks on ALL disks
-        for (int disk = 0; disk < superblock->num_disks; disk++) {
-            struct wfs_inode *diskParentInodePtr = (struct wfs_inode*)
-                ((char*)disks[disk] + superblock->i_blocks_ptr + parentInode * BLOCK_SIZE);
-            diskParentInodePtr->size += sizeof(struct wfs_dentry);
-            diskParentInodePtr->nlinks++;
-        }
-    }
-
-
-    // p.size += sizeof(struct wfs_dentry);
-    // p.nlinks++;
-
-    for(int i = 0; i < superblock -> num_disks; i++){
-        memcpy((char*) disks[i] + superblock->i_blocks_ptr + inodeIndex * BLOCK_SIZE,
-            &inode, sizeof(struct wfs_inode));
-
-        memcpy((char*) disks[i] + superblock -> i_blocks_ptr + parentInode * BLOCK_SIZE,
-            p, sizeof(struct wfs_inode));
-
-        // memcpy((char*) disks[i] + superblock -> d_blocks_ptr + p.blocks[0] * BLOCK_SIZE + p.size - sizeof(struct wfs_dentry),
-        //     &entry, sizeof(struct wfs_dentry));
-
-        // msync(disks[i], superblock -> i_blocks_ptr + (inodeIndex + 1) * BLOCK_SIZE, MS_SYNC);
-        // msync(disks[i], superblock -> d_blocks_ptr + (p.blocks[0] + 1) * BLOCK_SIZE, MS_SYNC);
-    }
-    //write_inode(inodeIndex, &inode);
-
-    //add_dir_entry(parentInode, newPath, inodeIndex);
-    printf("Returning from mkdir\n");
-    return SUCCESS;*/
     return SUCCESS;
 }
 
