@@ -390,19 +390,17 @@ int wfs_mkdir_helper_raid_mode(mode_t mode, int new_inode_index, char *disk, con
 
 
 
-
 int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
     struct wfs_sb *superblock = (struct wfs_sb *)disk_maps[0];
 
     // Copy path to mutable buffers for basename() and dirname()
-    char path_copy1[28];
-    char *parent_path = dirname(path_copy1);
-    strncpy(path_copy1, path, sizeof(path_copy1));
-
+    char path_copy1[PATH_MAX];
     char path_copy2[PATH_MAX];
+    strncpy(path_copy1, path, sizeof(path_copy1));
     strncpy(path_copy2, path, sizeof(path_copy2));
 
-
+    // Extract parent directory and new directory name
+    char *parent_path = dirname(path_copy1);
     char *new_name = basename(path_copy2);
 
     printf("Parent path: %s, New name: %s\n", parent_path, new_name);
@@ -471,6 +469,8 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
 
     return 0;  // Success
 }
+
+
 
 
 
