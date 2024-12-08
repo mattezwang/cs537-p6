@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include "wfs.h"
 #include <time.h>
+#include <libgen.h>
 
 
 void *disk_maps[10];
@@ -392,27 +393,21 @@ int wfs_mkdir_helper_raid_mode(mode_t mode, int new_inode_index, char *disk, con
 
 int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
     struct wfs_sb *superblock = (struct wfs_sb *)disk_maps[0];
-    
-    char new_name[MAX_NAME];
-    char parent_path[28];
-    strncpy(parent_path, path, 28);
 
-    char *slash = strrchr(parent_path, '/');
-    printf("Slash is %s\n", slash);
+    // Copy path to mutable buffers for basename() and dirname()
+    char path_copy1[PATH_MAX];
+    char path_copy2[PATH_MAX];
+    strncpy(path_copy1, path, sizeof(path_copy1));
+    strncpy(path_copy2, path, sizeof(path_copy2));
 
-    if (!slash) {
-        strncpy(new_name, path + 1, MAX_NAME);
-        strcpy(parent_path, "/");
-    } else if (slash == parent_path) {
-        strncpy(new_name, path + 1, MAX_NAME);
-        strcpy(parent_path, "/");
-    } else if (slash && slash != parent_path) {
-        strncpy(new_name, slash + 1, MAX_NAME);
-        *slash = '\0';
-    }
+    // Extract parent directory and new directory name
+    char *parent_path = dirname(path_copy1);
+    char *new_name = basename(path_copy2);
 
+    printf("Parent path: %s, New name: %s\n", parent_path, new_name);
+
+    // Lookup parent directory inode
     struct wfs_inode *parent_inode = lookup_inode(parent_path, disk);
-    printf("Parent path: %s\n", parent_path);
     if (!parent_inode) {
         return -ENOENT;  // Parent directory does not exist
     }
@@ -429,7 +424,7 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
         return -1;  // RAID mode handling failed
     }
 
-    // Add new directory entry to the parent
+    // Add the new directory entry to the parent directory
     int found_space = 0;
     printf("Parent inode num: %d\n", parent_inode->num);
     for (int i = 0; i < D_BLOCK; i++) {
@@ -452,8 +447,8 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
             }
         }
 
+        // Add the new directory entry in the block
         struct wfs_dentry *dir_entries = (struct wfs_dentry *)(disk + parent_inode->blocks[i]);
-        // Try to find an empty entry in the current block
         for (int j = 0; j < BLOCK_SIZE / sizeof(struct wfs_dentry); j++) {
             if (dir_entries[j].num == 0) {  // Empty entry
                 strncpy(dir_entries[j].name, new_name, MAX_NAME);
@@ -478,7 +473,6 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
 
 
 
-
 static int wfs_mkdir(const char *path, mode_t mode) {
     struct wfs_sb *superblock = (struct wfs_sb *)disk_maps[0];
 
@@ -495,8 +489,11 @@ static int wfs_mkdir(const char *path, mode_t mode) {
 static int wfs_mknod_helper(const char *path, mode_t mode, char *disk) {
     struct wfs_sb *superblock = (struct wfs_sb *)disk_maps[0];
 
-    char parent_path[1024], new_name[MAX_NAME];
-    strncpy(parent_path, path, sizeof(parent_path));
+    char parent_path[28];
+    char new_name[MAX_NAME];
+    strncpy(parent_path, path, 28);
+
+    // LAST occurence of the thing in the String
     char *slash = strrchr(parent_path, '/');
     if (!slash || slash == parent_path) {
         strncpy(new_name, path + 1, sizeof(new_name));
