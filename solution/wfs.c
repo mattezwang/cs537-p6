@@ -432,18 +432,6 @@ static int wfs_mknod(const char *path, mode_t mode, dev_t dev) {
         printf("wfs_mknod: BAD FIRST BLOCK\n");
     }
 
-    printf("before write_inode\n");
-    list_directories();
-    write_inode(child_idx, &inode);
-
-    printf("after write_inode, before add_parent_dir_entry\n");
-    list_directories();
-
-    add_parent_dir_entry(parentInode, childPath, child_idx);
-
-    printf("after add_parent_dir_entry\n");
-    list_directories();
-    printf("Returning from mknod\n");
     return SUCCESS;
 }
 
@@ -480,10 +468,23 @@ static int wfs_mkdir(const char *path, mode_t mode) {
     inode.atim = inode.mtim = inode.ctim = time(NULL);
     inode.size = 0;
 
+
+    printf("before write_inode\n");
+    list_directories();
     write_inode_across_disks(inodeIndex, &inode);
 
+
+    printf("after write_inode, before add_parent_dir_entry\n");
+    list_directories();
     // Add the new directory to its parent's directory entries
     int result = add_parent_dir_entry(parentInode, childPath, inodeIndex);
+
+    add_parent_dir_entry(parentInode, childPath, child_idx);
+    printf("after add_parent_dir_entry\n");
+    list_directories();
+
+    printf("Returning from mknod\n");
+
     if (result < 0) {
         // Cleanup if adding to parent fails
         return result;
