@@ -400,6 +400,12 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
     char *parent_path = dirname(path_copy1);
 
     struct wfs_inode *parent_inode = lookup_inode(parent_path, disk);
+
+    int new_inode_index = alloc_inode(disk);
+    if (new_inode_index < 0) {
+        return new_inode_index;  // Propagate ENOSPC
+    }
+
     if (!parent_inode) {
         return -ENOENT;  // Parent directory does not exist
     }
@@ -408,17 +414,10 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
     strncpy(path_copy2, path, sizeof(path_copy2));
     char *new_name = basename(path_copy2);
 
-    // Allocate a new inode for the directory
-    int new_inode_index = alloc_inode(disk);
-    if (new_inode_index < 0) {
-        return new_inode_index;  // Propagate ENOSPC
-    }
-    printf("New inode index: %d\n", new_inode_index);
-
-    // Delegate RAID mode handling to helper function
     if (wfs_mkdir_helper_raid_mode(mode, new_inode_index, disk, parent_path) != 0) {
-        return -1;  // RAID mode handling failed
-    }
+        return -1;
+    } else {
+
 
     // Add the new directory entry to the parent directory
     int found_space = 0;
@@ -465,6 +464,8 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
     }
 
     return 0;  // Success
+
+    }
 }
 
 
