@@ -990,11 +990,6 @@ int wfs_write_helper5(int disk_index, size_t indirect_offset, size_t block_start
 }
 
 
-// void wfs_write_reset_helper(size_t bytes_written, size_t to_write, size_t block_offset,) {
-//     bytes_written += to_write;
-//     block_offset++;
-//     block_start_offset = 0;
-// }
 
 
 static int wfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
@@ -1013,14 +1008,13 @@ static int wfs_write(const char *path, const char *buf, size_t size, off_t offse
     size_t bytes_written = 0;
     size_t block_offset = offset / BLOCK_SIZE;
     size_t block_start_offset = offset % BLOCK_SIZE;
-    int indirect_block_index;
+    int vbn;
+    int disk_index = 0;
+    int new;
     size_t block_available_space;
-    size_t to_write;
-    uint32_t *indirect_block;
-    size_t indirect_offset;
 
     while (bytes_written < size) {
-        int disk_index = 0, vbn = block_offset;
+        vbn = block_offset;
 
         switch (superblock->raid_mode) {
             case 0:
@@ -1036,21 +1030,21 @@ static int wfs_write(const char *path, const char *buf, size_t size, off_t offse
 
         if (block_offset < D_BLOCK) {
             if (inode->blocks[block_offset] == 0) {
-                int new = alloc_block((char *)disk_maps[disk_index]);
 
-                if (new >= 0) {
-                    wfs_write_helper1(inode, block_offset, new, vbn);
-                } else return -ENOSPC;
+                new = alloc_block((char *)disk_maps[disk_index]);
+                if (new < 0) {
+                    return -ENOSPC;
+                }
+
+                wfs_write_helper1(inode, block_offset, new, vbn);
             }
 
-            size_t block_available_space = BLOCK_SIZE - block_start_offset;
-
+            block_available_space = BLOCK_SIZE - block_start_offset;
             size_t to_write;
-            bool checker = size - bytes_written < block_available_space;
 
-             if(checker) {
+             if(size - bytes_written < block_available_space) {
                 to_write = size - bytes_written;
-             } else if (!checker) {
+             } else {
                 to_write = block_available_space;
              }
 
@@ -1061,14 +1055,11 @@ static int wfs_write(const char *path, const char *buf, size_t size, off_t offse
             block_start_offset = 0;
 
         } else {
-            indirect_offset = block_offset - D_BLOCK;
+            size_t indirect_offset = block_offset - D_BLOCK;
 
-            if (inode->blocks[IND_BLOCK] != 0) {
-                continue;
-            }
-            else {
+            if (inode->blocks[IND_BLOCK] == 0) {
 
-                indirect_block_index = alloc_block((char *) disk_maps[disk_index]);
+                int indirect_block_index = alloc_block((char *)disk_maps[disk_index]);
                 if (indirect_block_index < 0) {
                     return -ENOSPC;
                 }
@@ -1077,10 +1068,12 @@ static int wfs_write(const char *path, const char *buf, size_t size, off_t offse
 
             }
 
-            indirect_block = (uint32_t *)((char *)disk_maps[disk_index] + inode->blocks[IND_BLOCK]);
+            uint32_t *indirect_block = (uint32_t *)((char *)disk_maps[disk_index] + inode->blocks[IND_BLOCK]);
 
             if (indirect_block[indirect_offset] == 0) {
-                int new = alloc_block((char *) disk_maps[0]);
+                
+                int new = alloc_block((char *)disk_maps[0]);
+
                 if (new < 0) {
                     return -ENOSPC;
                 }
@@ -1088,12 +1081,13 @@ static int wfs_write(const char *path, const char *buf, size_t size, off_t offse
                 wfs_write_helper4(inode, indirect_offset, new);
             }
 
-            block_available_space = BLOCK_SIZE - block_start_offset;
+            size_t block_available_space = BLOCK_SIZE - block_start_offset;
 
-            int check1 = (size - bytes_written < block_available_space);
+            size_t to_write; 
+            bool check1 = size - bytes_written < block_available_space;
             if(!check1) {
                 to_write = block_available_space;
-            } else if (check1) {
+            } else if(check1) {
                 to_write = size - bytes_written;
             }
 
@@ -1106,19 +1100,21 @@ static int wfs_write(const char *path, const char *buf, size_t size, off_t offse
     }
 
     for (int i = 0; i < num_disks; i++) {
-        char *disk = (char *) disk_maps[i];
 
-        struct wfs_inode *other = (struct wfs_inode *)(disk + superblock->i_blocks_ptr + inode->num * BLOCK_SIZE);
+        char *disk = (char *)disk_maps[i];
+        struct wfs_inode *other = (struct wfs_inode *)(disk + (inode->num * BLOCK_SIZE)+ superblock->i_blocks_ptr);
+        other-> mtim = time(NULL);
 
-        if(offset + size > other->size) {
-            other->size = offset + size;
+        bool check2 = (offset + size > other->size);
+        if(check2) {
+            other-> size = offset + size;
         }
 
-        other->mtim = time(NULL);
     }
 
     return bytes_written;
 }
+
 
 
 /*
