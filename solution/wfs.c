@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include "wfs.h"
 #include <time.h>
-#include <libgen.h>
 
 
 void *disk_maps[10];
@@ -495,11 +494,10 @@ static int wfs_mkdir(const char *path, mode_t mode) {
 static int wfs_mknod_helper(const char *path, mode_t mode, char *disk) {
     struct wfs_sb *superblock = (struct wfs_sb *)disk_maps[0];
 
-    char parent_path[28];
-    char new_name[MAX_NAME];
-    strncpy(parent_path, path, 28);
+    char parent_path[1024], new_name[MAX_NAME];
+    strncpy(parent_path, path, sizeof(parent_path));
 
-    // LAST occurence of the thing in the String
+    // LAST occurence of the thing in the tring
     char *slash = strrchr(parent_path, '/');
     if (!slash || slash == parent_path) {
         strncpy(new_name, path + 1, sizeof(new_name));
