@@ -396,21 +396,17 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
 
     // Copy path to mutable buffers for basename() and dirname()
     char path_copy1[28];
-    char path_copy2[28];
     strncpy(path_copy1, path, sizeof(path_copy1));
-    strncpy(path_copy2, path, sizeof(path_copy2));
-
-    // Extract parent directory and new directory name
     char *parent_path = dirname(path_copy1);
-    char *new_name = basename(path_copy2);
 
-    printf("Parent path: %s, New name: %s\n", parent_path, new_name);
-
-    // Lookup parent directory inode
     struct wfs_inode *parent_inode = lookup_inode(parent_path, disk);
     if (!parent_inode) {
         return -ENOENT;  // Parent directory does not exist
     }
+
+    char path_copy2[28];
+    strncpy(path_copy2, path, sizeof(path_copy2));
+    char *new_name = basename(path_copy2);
 
     // Allocate a new inode for the directory
     int new_inode_index = alloc_inode(disk);
