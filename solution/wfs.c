@@ -394,7 +394,6 @@ int wfs_mkdir_helper_raid_mode(mode_t mode, int new_inode_index, char *disk, con
 int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
 
     struct wfs_sb *superblock = (struct wfs_sb *)disk_maps[0];
-    int new_inode_index = alloc_inode(disk);
 
     char temp_dirname[28];
     char *parent_path = dirname(temp_dirname);
@@ -418,8 +417,11 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
     // }
 
 
+
+    // Allocate a new inode for the directory
+    int new_inode_index = alloc_inode(disk);
     if (new_inode_index < 0) {
-        return -ENOSPC;  // Propagate ENOSPC
+        return new_inode_index;  // Propagate ENOSPC
     }
     printf("New inode index: %d\n", new_inode_index);
 
