@@ -365,7 +365,6 @@ static int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
     }
 
 
-
     struct wfs_inode *parent_inode = lookup_inode(parent_path, disk);
     printf("parent path: %s", parent_path);
     if (!parent_inode) {
@@ -556,6 +555,8 @@ static int wfs_mknod_helper(const char *path, mode_t mode, char *disk) {
 }
 
 static int wfs_mknod(const char *path, mode_t mode, dev_t rdev) {
+
+    (void)rdev;
     struct wfs_sb *superblock = (struct wfs_sb *)disk_maps[0];
 
     int result = 0;
