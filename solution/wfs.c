@@ -397,24 +397,25 @@ int wfs_mkdir_helper(const char *path, mode_t mode, char *disk) {
     int new_inode_index = alloc_inode(disk);
 
     char temp_dirname[28];
-    if(!(strncpy(temp_dirname, path, 28))) {
-        printf("something not working here in checkpoint 8");
-        return -1;
-    }
     char *parent_path = dirname(temp_dirname);
+    strncpy(temp_dirname, path, 28);
+    // if(!temp_dirname) {
+    //     printf("something not working here in checkpoint 8");
+    //     return -1;
+    // }
 
     struct wfs_inode *parent_inode = lookup_inode(parent_path, disk);
     if (!parent_inode) {
         return -ENOENT;
     }
 
-
     char temp_basename[28];
-    if(!(strncpy(temp_basename, path, 28))) {
-        printf("something not working here in checkpoint 8");
-        return -1;
-    }
+    strncpy(temp_basename, path, 28);
     char *new_name = basename(temp_basename);
+    // if(!temp_basename) {
+    //     printf("something not working here in checkpoint 8");
+    //     return -1;
+    // }
 
 
     if (new_inode_index < 0) {
